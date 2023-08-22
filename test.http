@@ -1,0 +1,66 @@
+POST http://localhost:8888/user/reset-validate-code
+Content-Type: application/json
+
+{
+  "email": "hff1996723@qq.com"
+}
+
+###
+POST http://localhost:8888/user
+Content-Type: application/json
+
+{
+  "email": "hff1996723@qq.com",
+  "passwd": "123456",
+  "validateCode": "39AZDa"
+}
+
+###
+POST http://localhost:8888/token
+Content-Type: application/json
+
+{
+  "email": "hff1996723@qq.com",
+  "passwd": "123456"
+}
+
+###
+GET http://localhost:8888/task
+Authorization: eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiaGZmMTk5NjcyM0BxcS5jb20ifQ.ZjcWohSUiSXs7oImWFKdow0YssT8-XTZv2KpeTGOsnFLWK250zFGUGKxLlsJuZiN6rBZvJO4HMLby7gBQarb5f4xcLOsDExfk7z2kqBr8OEChw_gKDjH8gzrQ1ahcbyDQcbm_hzn37nIqJlQsIPOiaBWvRu94g59_bDixJawcyAe6QH_jp08U1vu18BCX4YxfsgvpVufk01WJB1V9mmnXQSLp2EofJr4lNCogO9_Opz-4ve-JLtWnAeAe5dnuRcWdMk0qxlRLyItnw3IHrIvGT2XCO-Nzjp-1dSWuK9l5bBz4lmWKSjUE-nijGyaNIuxtCh0vJn21_82gsTjXzO5yg
+
+###
+POST http://localhost:8888/task
+Content-Type: application/json
+Authorization: eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiaGZmMTk5NjcyM0BxcS5jb20ifQ.ZjcWohSUiSXs7oImWFKdow0YssT8-XTZv2KpeTGOsnFLWK250zFGUGKxLlsJuZiN6rBZvJO4HMLby7gBQarb5f4xcLOsDExfk7z2kqBr8OEChw_gKDjH8gzrQ1ahcbyDQcbm_hzn37nIqJlQsIPOiaBWvRu94g59_bDixJawcyAe6QH_jp08U1vu18BCX4YxfsgvpVufk01WJB1V9mmnXQSLp2EofJr4lNCogO9_Opz-4ve-JLtWnAeAe5dnuRcWdMk0qxlRLyItnw3IHrIvGT2XCO-Nzjp-1dSWuK9l5bBz4lmWKSjUE-nijGyaNIuxtCh0vJn21_82gsTjXzO5yg
+
+{
+  "name":"test-task",
+  "data":{
+      "cron":"* * 1 * * *"
+  }
+}
+
+###
+PATCH http://localhost:8888/task/10
+Content-Type: application/json
+Authorization: eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiaGZmMTk5NjcyM0BxcS5jb20ifQ.ZjcWohSUiSXs7oImWFKdow0YssT8-XTZv2KpeTGOsnFLWK250zFGUGKxLlsJuZiN6rBZvJO4HMLby7gBQarb5f4xcLOsDExfk7z2kqBr8OEChw_gKDjH8gzrQ1ahcbyDQcbm_hzn37nIqJlQsIPOiaBWvRu94g59_bDixJawcyAe6QH_jp08U1vu18BCX4YxfsgvpVufk01WJB1V9mmnXQSLp2EofJr4lNCogO9_Opz-4ve-JLtWnAeAe5dnuRcWdMk0qxlRLyItnw3IHrIvGT2XCO-Nzjp-1dSWuK9l5bBz4lmWKSjUE-nijGyaNIuxtCh0vJn21_82gsTjXzO5yg
+
+{
+  "name": "modified-task-name"
+}
+
+###
+PUT http://localhost:8888/task/10
+Content-Type: application/json
+Authorization: eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiaGZmMTk5NjcyM0BxcS5jb20ifQ.ZjcWohSUiSXs7oImWFKdow0YssT8-XTZv2KpeTGOsnFLWK250zFGUGKxLlsJuZiN6rBZvJO4HMLby7gBQarb5f4xcLOsDExfk7z2kqBr8OEChw_gKDjH8gzrQ1ahcbyDQcbm_hzn37nIqJlQsIPOiaBWvRu94g59_bDixJawcyAe6QH_jp08U1vu18BCX4YxfsgvpVufk01WJB1V9mmnXQSLp2EofJr4lNCogO9_Opz-4ve-JLtWnAeAe5dnuRcWdMk0qxlRLyItnw3IHrIvGT2XCO-Nzjp-1dSWuK9l5bBz4lmWKSjUE-nijGyaNIuxtCh0vJn21_82gsTjXzO5yg
+
+{
+  "name":"test-task",
+  "data":{
+      "cron":"* * 10 * * *"
+  }
+}
+
+### 
+GET http://localhost:8888/template
+Authorization: eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiaGZmMTk5NjcyM0BxcS5jb20ifQ.ZjcWohSUiSXs7oImWFKdow0YssT8-XTZv2KpeTGOsnFLWK250zFGUGKxLlsJuZiN6rBZvJO4HMLby7gBQarb5f4xcLOsDExfk7z2kqBr8OEChw_gKDjH8gzrQ1ahcbyDQcbm_hzn37nIqJlQsIPOiaBWvRu94g59_bDixJawcyAe6QH_jp08U1vu18BCX4YxfsgvpVufk01WJB1V9mmnXQSLp2EofJr4lNCogO9_Opz-4ve-JLtWnAeAe5dnuRcWdMk0qxlRLyItnw3IHrIvGT2XCO-Nzjp-1dSWuK9l5bBz4lmWKSjUE-nijGyaNIuxtCh0vJn21_82gsTjXzO5yg

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title th:text="${success}?'注册成功':'注册失败'"></title>
+</head>
+<body>
+<p th:if="${success}">注册成功，您可以尽情使用我们的服务了</p>
+<p th:if="!${success}">您已确认过，无需重复确认，如有问题请联系我们</p>
+</body>
+</html>

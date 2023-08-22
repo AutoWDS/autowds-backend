@@ -1,0 +1,22 @@
+[package]
+name = "autowds-backend"
+version = "0.1.0"
+edition = "2021"
+authors = ["holmofy"]
+description = "Auto Web Data Scraper Backend"
+
+[dependencies]
+actix-web = "4"
+sqlx = { version = "0.7", features = ["runtime-tokio", "any", "postgres"] }
+log = "0.4.20"
+env_logger = "0.10.0"
+dotenvy = "0.15.7"
+envconfig = "0.10.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+validator = { version = "0.16", features = ["derive"] }
+actix-web-validator = "5.0.1"
+reqwest = "0.11.18"
+askama = "0.12.0"
+lettre = "0.10.4"
+rand = "0.8.5"
