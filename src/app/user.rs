@@ -4,10 +4,10 @@ use deadpool_redis::redis;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::app::AppState;
 use crate::model::user::{self as user_model, AccountUser, ProductEdition};
 use crate::utils::mail::{self, ValidateCodeMailTemplate};
 use crate::utils::rand;
+use crate::AppState;
 
 pub fn user_scope() -> Scope {
     return web::scope("/user")
