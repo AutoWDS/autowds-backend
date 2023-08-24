@@ -1,3 +1,11 @@
+POST http://localhost:8888/user/register-validate-code
+Content-Type: application/json
+
+{
+  "email": "hff1996723@qq.com"
+}
+
+###
 POST http://localhost:8888/user/reset-validate-code
 Content-Type: application/json
 

@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer};
+use actix_web::{middleware::ErrorHandlers, web, App, HttpServer};
 use deadpool_redis::{Config, Pool, Runtime};
 use envconfig::Envconfig;
 use rbatis::RBatis;
@@ -53,10 +53,10 @@ async fn main() -> std::io::Result<()> {
 
     // 初始化数据库连接
     let rb = RBatis::new();
-    rb.get_pool().unwrap().resize(config.db_max_connection);
     rb.link(PgDriver {}, &config.db_url)
         .await
         .expect(format!("can't connect to database: {}", config.db_url).as_str());
+    rb.get_pool().unwrap().resize(config.db_max_connection);
 
     let app_state = AppState {
         rbatis: rb,
@@ -70,6 +70,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(app_state.clone()))
             .wrap(actix_web::middleware::Logger::default())
             .wrap(middleware::auth_middleware::Authentication)
+            .wrap(ErrorHandlers::new().default_handler(middleware::error_handler::handle_error))
             .configure(app::config)
     })
     .workers(num_cpus::get())
