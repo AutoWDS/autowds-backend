@@ -69,6 +69,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(app_state.clone()))
             .wrap(actix_web::middleware::Logger::default())
+            .wrap(middleware::real_ip_parser::RealIP)
             .wrap(middleware::auth_middleware::Authentication)
             .wrap(ErrorHandlers::new().default_handler(middleware::error_handler::handle_error))
             .configure(app::config)

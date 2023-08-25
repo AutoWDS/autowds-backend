@@ -1,3 +1,5 @@
+use std::net::IpAddr;
+
 use actix_web::{error, post, web, HttpResponse, Scope};
 use actix_web_validator::Json;
 use deadpool_redis::redis;
@@ -20,6 +22,7 @@ pub fn user_scope() -> Scope {
 #[post("/")]
 async fn register(
     state: web::Data<AppState>,
+    ip_addr: Option<web::ReqData<IpAddr>>,
     body: Json<RegisterDTO>,
 ) -> Result<HttpResponse, error::Error> {
     let mut rb = &state.rbatis;
@@ -38,7 +41,7 @@ async fn register(
             email: String::from(&body.email),
             name: String::from(&body.name),
             passwd: String::from(&body.passwd),
-            last_login: String::from("127.0.0.1"),
+            last_login: ip_addr.unwrap().to_string(),
         },
     )
     .await
@@ -54,6 +57,7 @@ async fn register(
 #[post("/passwd")]
 async fn reset_passwd(
     state: web::Data<AppState>,
+    ip_addr: Option<web::ReqData<IpAddr>>,
     body: Json<ResetPasswdDTO>,
 ) -> Result<HttpResponse, error::Error> {
     let mut rb = &state.rbatis;
@@ -64,6 +68,7 @@ async fn reset_passwd(
     let user = match user_optional {
         Some(u) => AccountUser {
             passwd: String::from(&body.passwd),
+            last_login: ip_addr.unwrap().to_string(),
             ..u
         },
         None => return Err(error::ErrorNotFound("用户不存在").into()),
