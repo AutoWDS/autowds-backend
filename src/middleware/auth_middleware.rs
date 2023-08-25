@@ -1,16 +1,13 @@
 use actix_web::body::EitherBody;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
+use actix_web::http::header;
 use actix_web::http::Method;
-use actix_web::http::{self, header};
-use actix_web::{Error, HttpMessage};
-use actix_web::{HttpResponse, Responder};
+use actix_web::{error, Error, HttpMessage};
 use futures_util::future::LocalBoxFuture;
 use glob::Pattern;
 use std::future::{ready, Ready};
 
 use crate::utils::jwt;
-
-use super::problemdetails;
 
 lazy_static! {
     static ref IGNORE_ROUTES: [Pattern; 2] =
@@ -83,13 +80,11 @@ where
         }
 
         if !authenticate_pass {
-            let (request, _pl) = req.into_parts();
-            let pd = problemdetails::Problem::from(http::StatusCode::UNAUTHORIZED)
-                .with_instance(request.uri().to_string())
-                .with_detail("token error");
-            let response = HttpResponse::Unauthorized().json(pd).map_into_right_body();
-
-            return Box::pin(async { Ok(ServiceResponse::new(request, response)) });
+            return Box::pin(async {
+                Ok(req
+                    .error_response(error::ErrorUnauthorized("认证失败"))
+                    .map_into_right_body())
+            });
         }
 
         let res = self.service.call(req);
