@@ -1,12 +1,14 @@
-use rbatis::{crud, impl_select, impl_update, sql, RBatis};
+use std::net::IpAddr;
+
+use rbatis::{crud, impl_select, impl_update, rbdc::datetime::DateTime, sql, RBatis};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Deserialize, Serialize)]
 pub enum ProductEdition {
-    L0,
-    L1,
-    L2,
-    L3,
+    L0 = 0,
+    L1 = 1,
+    L2 = 2,
+    L3 = 3,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -18,7 +20,9 @@ pub struct AccountUser {
     pub email: String,
     #[serde(skip_serializing)]
     pub passwd: String,
-    pub last_login: String,
+    pub last_login: IpAddr,
+    pub modified: DateTime,
+    pub created: DateTime,
 }
 
 crud!(AccountUser {});

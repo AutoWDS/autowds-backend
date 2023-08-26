@@ -1,8 +1,10 @@
 use std::net::IpAddr;
 
-use actix_web::{error, post, web, HttpResponse, Scope};
+use actix_web::{error, post, web, HttpResponse, Responder, Scope};
 use actix_web_validator::Json;
 use deadpool_redis::redis;
+use rbatis::rbdc::datetime::DateTime;
+use rbatis::rbdc::timestamp::Timestamp;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
@@ -41,7 +43,9 @@ async fn register(
             email: String::from(&body.email),
             name: String::from(&body.name),
             passwd: String::from(&body.passwd),
-            last_login: ip_addr.unwrap().to_string(),
+            last_login: ip_addr.unwrap().into_inner(),
+            created: DateTime::now(),
+            modified: DateTime::now(),
         },
     )
     .await
@@ -68,7 +72,8 @@ async fn reset_passwd(
     let user = match user_optional {
         Some(u) => AccountUser {
             passwd: String::from(&body.passwd),
-            last_login: ip_addr.unwrap().to_string(),
+            // modified: NOW
+            last_login: ip_addr.unwrap().into_inner(),
             ..u
         },
         None => return Err(error::ErrorNotFound("用户不存在").into()),
@@ -89,25 +94,28 @@ async fn reset_passwd(
 async fn register_validate_code(
     state: web::Data<AppState>,
     body: Json<SendEmailDTO>,
-) -> &'static str {
+) -> impl Responder {
     let validate_code = generate_validate_code(&state, &body.email).await;
     let template = ValidateCodeMailTemplate {
         tip: "欢迎您注册我们的服务，您的注册验证码(5分钟内有效)是：",
         validate_code: validate_code.as_str(),
     };
     mail::send_mail(&body.email, "注册验证码", &template);
-    "ok"
+    ""
 }
 
 #[post("/reset-validate-code")]
-async fn reset_validate_code(state: web::Data<AppState>, body: Json<SendEmailDTO>) -> &'static str {
+async fn reset_validate_code(
+    state: web::Data<AppState>,
+    body: Json<SendEmailDTO>,
+) -> impl Responder {
     let validate_code = generate_validate_code(&state, &body.email).await;
     let template = ValidateCodeMailTemplate {
         tip: "请确认您是否需要重置密码，重置密码请在系统中输入以下验证码(5分钟内有效)：",
         validate_code: validate_code.as_str(),
     };
     mail::send_mail(&body.email, "重置密码的验证码", &template);
-    "ok"
+    ""
 }
 
 async fn generate_validate_code(state: &AppState, email: &str) -> String {

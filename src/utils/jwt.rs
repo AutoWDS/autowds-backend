@@ -18,7 +18,7 @@ pub struct Claims {
 }
 
 impl Claims {
-    fn new(uid: i64) -> Claims {
+    pub fn new(uid: i64) -> Claims {
         Claims {
             uid,
             iss: String::from(ISSUER),
