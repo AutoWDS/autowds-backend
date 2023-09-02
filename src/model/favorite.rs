@@ -1,14 +1,12 @@
-use rbatis::{crud, impl_select, impl_update, sql, RBatis};
-use serde::{Deserialize, Serialize};
+use chrono::NaiveDateTime;
+use ormlite::model::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Model)]
+#[ormlite(table = "favorite")]
 pub struct Favorite {
-    id: i64,
-    template_id: i64,
-    user_id: i64,
-    created: String,
+    #[ormlite(primary_key)]
+    pub id: i64,
+    pub created: NaiveDateTime,
+    pub user_id: i64,
+    pub template_id: i64,
 }
-
-crud!(Favorite {});
-
-impl_select!(Favorite{select_by_user_id(user_id:i64)->Option => "`where user_id=#{user_id}`"});

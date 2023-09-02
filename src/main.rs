@@ -1,8 +1,7 @@
 use actix_web::{middleware::ErrorHandlers, web, App, HttpServer};
 use deadpool_redis::{Config, Pool, Runtime};
 use envconfig::Envconfig;
-use rbatis::RBatis;
-use rbdc_pg::driver::PgDriver;
+use ormlite::postgres::{PgPool, PgPoolOptions};
 use std::net::SocketAddr;
 
 mod app;
@@ -16,7 +15,7 @@ extern crate lazy_static;
 /// 数据库连接
 #[derive(Clone)]
 pub struct AppState {
-    rbatis: RBatis,
+    db: PgPool,
     redis: Pool,
 }
 
@@ -33,7 +32,7 @@ struct AppConfig {
     pub db_url: String,
 
     #[envconfig(from = "POOL_SIZE", default = "3")]
-    pub db_max_connection: usize,
+    pub db_max_connection: u32,
 
     #[envconfig(from = "REDIS_URL", default = "redis://127.0.0.1/")]
     pub redis_url: String,
@@ -46,24 +45,24 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init();
 
-    let config = AppConfig::init_from_env().unwrap();
+    let config = AppConfig::init_from_env().expect("envconfig init failed");
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server_port));
     log::info!("listening on {}", addr);
 
     // 初始化数据库连接
-    let rb = RBatis::new();
-    rb.link(PgDriver {}, &config.db_url)
+    let db = PgPoolOptions::new()
+        .max_connections(config.db_max_connection)
+        .connect(&config.db_url)
         .await
         .expect(format!("can't connect to database: {}", config.db_url).as_str());
-    rb.get_pool().unwrap().resize(config.db_max_connection);
 
-    let app_state = AppState {
-        rbatis: rb,
-        redis: Config::from_url(&config.redis_url)
-            .create_pool(Some(Runtime::Tokio1))
-            .unwrap(),
-    };
+    // redis
+    let redis = Config::from_url(&config.redis_url)
+        .create_pool(Some(Runtime::Tokio1))
+        .expect(format!("can't connect to redis: {}", config.redis_url).as_str());
+
+    let app_state = AppState { db, redis };
 
     HttpServer::new(move || {
         App::new()

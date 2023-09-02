@@ -9,7 +9,7 @@ pub fn template_scope() -> Scope {
         .service(find_by_id);
 }
 
-#[get("/")]
+#[get("")]
 async fn query_template(
     claims: Option<web::ReqData<Claims>>,
     query: web::Query<TemplateQuery>,

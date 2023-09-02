@@ -8,10 +8,10 @@ description = "Auto Web Data Scraper Backend"
 [dependencies]
 actix-web = "4"
 jsonwebtoken = "8.3"
-rbs = { version = "4.3"}
-rbatis = { version = "4.3"}
-rbdc-pg={version="4.3"}
-deadpool-redis = "0.12.0"
+sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "chrono" ] }
+ormlite = { version = "0.17.1", features = ["postgres"] }
+deadpool-redis = "0.12"
+chrono = "0.4.28"
 log = "0.4"
 env_logger = "0.10"
 dotenvy = "0.15.7"
