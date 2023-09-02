@@ -10,8 +10,14 @@ use std::future::{ready, Ready};
 use crate::utils::jwt;
 
 lazy_static! {
-    static ref IGNORE_ROUTES: [Pattern; 4] =
-        ["/token", "/user/**", "/template", "/instance/*/log"].map(|path| Pattern::new(path).unwrap());
+    static ref IGNORE_ROUTES: [Pattern; 5] = [
+        "/token",
+        "/user",
+        "/user/**",
+        "/template",
+        "/instance/*/log"
+    ]
+    .map(|path| Pattern::new(path).unwrap());
 }
 
 pub struct Authentication;

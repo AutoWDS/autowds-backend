@@ -36,6 +36,9 @@ struct AppConfig {
 
     #[envconfig(from = "REDIS_URL", default = "redis://127.0.0.1/")]
     pub redis_url: String,
+
+    #[envconfig(from = "DEBUG", default = "false")]
+    pub debug: bool,
 }
 
 /// 入口函数
@@ -73,7 +76,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(ErrorHandlers::new().default_handler(middleware::error_handler::handle_error))
             .configure(app::config)
     })
-    .workers(num_cpus::get())
+    .workers(if config.debug { 1 } else { num_cpus::get() })
     .bind(addr)?
     .run()
     .await

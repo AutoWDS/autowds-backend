@@ -18,6 +18,7 @@ POST http://localhost:8888/user
 Content-Type: application/json
 
 {
+  "name": "holmofy",
   "email": "hff1996723@qq.com",
   "passwd": "123456",
   "validateCode": "39AZDa"

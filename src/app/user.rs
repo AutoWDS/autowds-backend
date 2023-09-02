@@ -23,7 +23,7 @@ pub fn user_scope() -> Scope {
         .service(reset_validate_code);
 }
 
-#[post("/")]
+#[post("")]
 async fn register(
     state: web::Data<AppState>,
     ip_addr: Option<web::ReqData<IpAddr>>,
