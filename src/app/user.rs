@@ -8,7 +8,7 @@ use ormlite::model::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::middleware::error::Result;
+use crate::http::error::Result;
 use crate::model::account_user::AccountUser;
 use crate::model::enums::ProductEdition;
 use crate::utils::mail::{self, ValidateCodeMailTemplate};

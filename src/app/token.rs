@@ -1,3 +1,4 @@
+use actix_web::http::header::ContentType;
 use actix_web::{error, post, web, HttpResponse, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
@@ -6,7 +7,7 @@ use serde::Deserialize;
 use std::net::IpAddr;
 use validator::Validate;
 
-use crate::middleware::error::Result;
+use crate::http::error::Result;
 use crate::model::account_user::AccountUser;
 use crate::utils::jwt::{self, Claims};
 use crate::AppState;
@@ -39,7 +40,11 @@ async fn login(
     };
 
     let claims = Claims::new(user.id.unwrap());
-    return Ok(jwt::encode(claims).map(|token| HttpResponse::Ok().json(token))?);
+    return Ok(jwt::encode(claims).map(|token| {
+        HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(token)
+    })?);
 }
 
 #[derive(Debug, Deserialize, Validate)]
