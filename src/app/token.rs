@@ -1,6 +1,7 @@
 use actix_web::{error, post, web, HttpResponse, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
+use ormlite::model::*;
 use serde::Deserialize;
 use std::net::IpAddr;
 use validator::Validate;
@@ -30,14 +31,14 @@ async fn login(
                 return Err(error::ErrorBadRequest("密码输入错误").into());
             }
             u.update_partial()
-                .ip_addr(ip_addr.unwrap().to_string())
                 .modified(Local::now().naive_local())
-                .update(&mut db)
+                .last_login(ip_addr.unwrap().into_inner())
+                .update(db)
                 .await?
         }
     };
 
-    let claims = Claims::new(user.id?);
+    let claims = Claims::new(user.id.unwrap());
     return Ok(jwt::encode(claims).map(|token| HttpResponse::Ok().json(token))?);
 }
 

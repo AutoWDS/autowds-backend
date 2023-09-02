@@ -1,9 +1,12 @@
+use std::net::IpAddr;
+
 use super::enums::ProductEdition;
 use chrono::NaiveDateTime;
 use ormlite::{model::*, Result};
+use serde::Serialize;
 use sqlx::PgPool;
 
-#[derive(Clone, Debug, Model)]
+#[derive(Clone, Debug, Model, Serialize)]
 #[ormlite(table = "account_user")]
 pub struct AccountUser {
     #[ormlite(primary_key)]
@@ -13,9 +16,11 @@ pub struct AccountUser {
     pub edition: ProductEdition,
     pub name: String,
     pub email: String,
+    #[serde(skip_serializing)]
     pub passwd: String,
     pub locked: bool,
-    pub last_login: String,
+    #[serde(skip_serializing)]
+    pub last_login: IpAddr,
 }
 
 impl AccountUser {

@@ -4,6 +4,7 @@ use actix_web::{error, post, web, HttpResponse, Responder, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
 use deadpool_redis::redis;
+use ormlite::model::*;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
@@ -28,28 +29,28 @@ async fn register(
     ip_addr: Option<web::ReqData<IpAddr>>,
     body: Json<RegisterDTO>,
 ) -> Result<HttpResponse> {
-    let mut db = &state.db;
+    let db = &state.db;
     let exists = AccountUser::exists_by_email(&db, body.email.as_str()).await?;
 
     if exists {
         return Err(error::ErrorBadRequest("邮箱已被注册").into());
     }
 
-    let mut success = AccountUser {
+    let user = AccountUser {
         id: None,
         locked: false,
         edition: ProductEdition::L0,
-        email: body.email,
-        name: body.name,
-        passwd: body.passwd,
-        last_login: ip_addr.unwrap().to_string(),
+        email: String::from(&body.email),
+        name: String::from(&body.name),
+        passwd: String::from(&body.passwd),
+        last_login: ip_addr.unwrap().into_inner(),
         created: Local::now().naive_local(),
         modified: Local::now().naive_local(),
     }
-    .insert(&mut db)
+    .insert(db)
     .await?;
 
-    return Ok(HttpResponse::Ok().json("注册成功"));
+    return Ok(HttpResponse::Ok().json(user));
 }
 
 #[post("/passwd")]
@@ -58,17 +59,17 @@ async fn reset_passwd(
     ip_addr: Option<web::ReqData<IpAddr>>,
     body: Json<ResetPasswdDTO>,
 ) -> Result<HttpResponse> {
-    let mut db = &state.db;
+    let db = &state.db;
     let user_optional = AccountUser::select_by_email(&db, &body.email).await?;
 
     let user = match user_optional {
         None => return Err(error::ErrorNotFound("用户不存在").into()),
         Some(u) => {
             u.update_partial()
-                .passwd(body.passwd)
+                .passwd(&body.passwd)
                 .modified(Local::now().naive_local())
-                .last_login(ip_addr.unwrap().to_string())
-                .update(&mut db)
+                .last_login(ip_addr.unwrap().into_inner())
+                .update(db)
                 .await?
         }
     };
