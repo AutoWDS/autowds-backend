@@ -1,12 +1,13 @@
 use std::net::IpAddr;
 
 use super::enums::ProductEdition;
-use chrono::NaiveDateTime;
+use chrono::{Local, NaiveDateTime};
 use ormlite::{model::*, Result};
 use serde::Serialize;
 use sqlx::PgPool;
+use utoipa::ToSchema;
 
-#[derive(Clone, Debug, Model, Serialize)]
+#[derive(Clone, Debug, Model, Serialize, ToSchema)]
 #[ormlite(table = "account_user")]
 pub struct AccountUser {
     #[ormlite(primary_key)]
@@ -39,5 +40,16 @@ impl AccountUser {
             .bind(email)
             .fetch_optional(db)
             .await
+    }
+
+    pub async fn update_name(db: &PgPool, uid: i64, name: &str) -> Result<bool> {
+        let effect = sqlx::query("update account_user set name=?,modified=? where id=?")
+            .bind(name)
+            .bind(Local::now().naive_local())
+            .bind(uid)
+            .execute(db)
+            .await?
+            .rows_affected();
+        Ok(effect > 0)
     }
 }

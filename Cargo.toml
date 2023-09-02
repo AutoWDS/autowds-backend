@@ -3,11 +3,14 @@ name = "autowds-backend"
 version = "0.1.0"
 edition = "2021"
 authors = ["holmofy"]
+license = "MIT"
 description = "Auto Web Data Scraper Backend"
 
 [dependencies]
 actix-web = "4"
 jsonwebtoken = "8.3"
+utoipa = { version = "3", features = ["actix_extras", "chrono"] }
+utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 sqlx = { version = "0.7", features = [
     "runtime-tokio",
     "postgres",

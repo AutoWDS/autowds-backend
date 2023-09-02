@@ -1,28 +1,46 @@
-use std::net::IpAddr;
-
-use actix_web::{error, post, web, HttpResponse, Responder, Scope};
+use actix_web::{error, get, patch, post, web, HttpResponse, Responder, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
 use deadpool_redis::redis;
 use ormlite::model::*;
 use serde::{Deserialize, Serialize};
+use std::net::IpAddr;
+use utoipa::{OpenApi, ToSchema};
 use validator::Validate;
 
 use crate::http::error::Result;
 use crate::model::account_user::AccountUser;
 use crate::model::enums::ProductEdition;
+use crate::utils::jwt::Claims;
 use crate::utils::mail::{self, ValidateCodeMailTemplate};
 use crate::utils::rand;
 use crate::AppState;
+
+#[derive(OpenApi)]
+#[openapi(
+    tags((name = "User", description = "用户相关服务")),
+    paths(register, reset_passwd),
+    components(schemas(RegisterDTO,ResetPasswdDTO,SendEmailDTO,SetNameReqDto,AccountUser))
+)]
+pub struct UserDoc;
 
 pub fn user_scope() -> Scope {
     return web::scope("/user")
         .service(register)
         .service(reset_passwd)
         .service(register_validate_code)
-        .service(reset_validate_code);
+        .service(reset_validate_code)
+        .service(get_current_user)
+        .service(rename);
 }
 
+#[utoipa::path(
+    context_path = "/user",
+    request_body=RegisterDTO,
+    responses(
+        (status = 200, description = "注册", body = [AccountUser])
+    )
+)]
 #[post("")]
 async fn register(
     state: web::Data<AppState>,
@@ -53,6 +71,13 @@ async fn register(
     return Ok(HttpResponse::Ok().json(user));
 }
 
+#[utoipa::path(
+    context_path = "/user",
+    request_body=ResetPasswdDTO,
+    responses(
+        (status = 200, description = "改密码", body = [AccountUser])
+    )
+)]
 #[post("/passwd")]
 async fn reset_passwd(
     state: web::Data<AppState>,
@@ -105,7 +130,7 @@ async fn reset_validate_code(
     Ok("")
 }
 
-pub async fn generate_validate_code(state: &AppState, email: &str) -> Result<String> {
+async fn generate_validate_code(state: &AppState, email: &str) -> Result<String> {
     let rand_code = rand::rand_alphanumeric(6);
     let mut conn = state.redis.get().await?;
     redis::cmd("SETEX")
@@ -117,7 +142,36 @@ pub async fn generate_validate_code(state: &AppState, email: &str) -> Result<Str
     return Ok(rand_code);
 }
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[get("")]
+async fn get_current_user(
+    state: web::Data<AppState>,
+    claims: Option<web::ReqData<Claims>>,
+) -> Result<HttpResponse> {
+    match claims {
+        None => return Err(error::ErrorUnauthorized("请先登录").into()),
+        Some(c) => {
+            let user = AccountUser::fetch_one(c.uid, &state.db).await?;
+            Ok(HttpResponse::Ok().json(user))
+        }
+    }
+}
+
+#[patch("/name")]
+async fn rename(
+    state: web::Data<AppState>,
+    claims: Option<web::ReqData<Claims>>,
+    body: Json<SetNameReqDto>,
+) -> Result<HttpResponse> {
+    match claims {
+        None => return Err(error::ErrorUnauthorized("请先登录").into()),
+        Some(c) => {
+            let success = AccountUser::update_name(&state.db, c.uid, &body.name).await?;
+            Ok(HttpResponse::Ok().json(success))
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 pub struct RegisterDTO {
     #[validate(length(min = 1, max = 30, message = "用户名需在1-30个字符间"))]
     pub name: String,
@@ -129,7 +183,7 @@ pub struct RegisterDTO {
     pub validate_code: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 pub struct ResetPasswdDTO {
     #[validate(email(message = "邮箱格式不正确"))]
     pub email: String,
@@ -139,8 +193,14 @@ pub struct ResetPasswdDTO {
     pub validate_code: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct SendEmailDTO {
     #[validate(email(message = "邮箱格式不正确"))]
     email: String,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct SetNameReqDto {
+    #[validate(length(min = 1, max = 30, message = "用户名需在1-30个字符间"))]
+    name: String,
 }

@@ -1,24 +1,11 @@
 use actix_web::body::EitherBody;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::header;
-use actix_web::http::Method;
 use actix_web::{error, Error, HttpMessage};
 use futures_util::future::LocalBoxFuture;
-use glob::Pattern;
 use std::future::{ready, Ready};
 
 use crate::utils::jwt;
-
-lazy_static! {
-    static ref IGNORE_ROUTES: [Pattern; 5] = [
-        "/token",
-        "/user",
-        "/user/**",
-        "/template",
-        "/instance/*/log"
-    ]
-    .map(|path| Pattern::new(path).unwrap());
-}
 
 pub struct Authentication;
 
@@ -58,39 +45,21 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let mut authenticate_pass: bool = false;
 
-        if Method::OPTIONS == *req.method() {
-            // 忽略OPTIONS请求
-            authenticate_pass = true;
-        } else {
-            // 忽略某些路径的请求
-            for ignore_route in IGNORE_ROUTES.iter() {
-                if ignore_route.matches(req.path()) {
-                    authenticate_pass = true;
-                }
-            }
-        }
-
-        if !authenticate_pass {
-            // 没有忽略的请求，需要对jwt进行解码
-            if let Some(auth_token) = req.headers().get(header::AUTHORIZATION) {
-                let token = auth_token.to_str().unwrap();
-                if let Ok(claims) = jwt::decode(token) {
-                    // 解码成功
+        // 没有忽略的请求，需要对jwt进行解码
+        if let Some(auth_token) = req.headers().get(header::AUTHORIZATION) {
+            let token = auth_token.to_str().unwrap();
+            match jwt::decode(token) {
+                Ok(claims) => {
                     req.extensions_mut().insert(claims);
-                } else {
-                    authenticate_pass = false;
                 }
-            } else {
-                authenticate_pass = false;
+                Err(e) => {
+                    return Box::pin(async {
+                        Ok(req
+                            .error_response(error::ErrorUnauthorized(e))
+                            .map_into_right_body())
+                    });
+                }
             }
-        }
-
-        if !authenticate_pass {
-            return Box::pin(async {
-                Ok(req
-                    .error_response(error::ErrorUnauthorized("认证失败"))
-                    .map_into_right_body())
-            });
         }
 
         let res = self.service.call(req);
