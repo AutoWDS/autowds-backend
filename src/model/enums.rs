@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize, ToSchema)]
 #[sqlx(type_name = "product_edition")]
 pub enum ProductEdition {
     L0,
@@ -9,21 +10,21 @@ pub enum ProductEdition {
     L3,
 }
 
-#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize, ToSchema)]
 #[sqlx(type_name = "scheduler_type")]
 pub enum SchedulerType {
     Browser,
     Fast,
 }
 
-#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize, ToSchema)]
 #[sqlx(type_name = "store_type")]
 pub enum StoreType {
     MongoDB,
     RDB,
 }
 
-#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize, ToSchema)]
 #[sqlx(type_name = "task_status")]
 pub enum TaskStatus {
     Cancelled,
@@ -33,7 +34,7 @@ pub enum TaskStatus {
     Waiting,
 }
 
-#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize)]
+#[derive(sqlx::Type, Clone, Debug, Serialize, Deserialize, ToSchema)]
 #[sqlx(type_name = "template_topic")]
 pub enum TemplateTopic {
     Bidding,
