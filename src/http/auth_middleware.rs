@@ -1,11 +1,11 @@
 use actix_web::body::EitherBody;
-use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
+use actix_web::dev::{forward_ready, Payload, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::header;
-use actix_web::{error, Error, HttpMessage};
+use actix_web::{error, Error, HttpMessage, HttpRequest};
 use futures_util::future::LocalBoxFuture;
 use std::future::{ready, Ready};
 
-use crate::utils::jwt;
+use crate::utils::jwt::{self, Claims};
 
 pub struct Authentication;
 
@@ -63,5 +63,17 @@ where
         let res = self.service.call(req);
 
         Box::pin(async move { res.await.map(ServiceResponse::map_into_left_body) })
+    }
+}
+
+impl actix_web::FromRequest for Claims {
+    type Error = actix_web::Error;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
+        ready(match req.extensions().get::<Claims>() {
+            Some(claims) => Ok(claims.clone()),
+            None => Err(error::ErrorUnauthorized("请先登录").into()),
+        })
     }
 }

@@ -142,32 +142,19 @@ async fn generate_validate_code(state: &AppState, email: &str) -> Result<String>
 }
 
 #[get("")]
-async fn get_current_user(
-    state: web::Data<AppState>,
-    claims: Option<web::ReqData<Claims>>,
-) -> Result<HttpResponse> {
-    match claims {
-        None => return Err(error::ErrorUnauthorized("请先登录").into()),
-        Some(c) => {
-            let user = AccountUser::fetch_one(c.uid, &state.db).await?;
-            Ok(HttpResponse::Ok().json(user))
-        }
-    }
+async fn get_current_user(state: web::Data<AppState>, claims: Claims) -> Result<HttpResponse> {
+    let user = AccountUser::fetch_one(claims.uid, &state.db).await?;
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[patch("/name")]
 async fn rename(
     state: web::Data<AppState>,
-    claims: Option<web::ReqData<Claims>>,
+    claims: Claims,
     body: Json<SetNameReqDto>,
 ) -> Result<HttpResponse> {
-    match claims {
-        None => return Err(error::ErrorUnauthorized("请先登录").into()),
-        Some(c) => {
-            let success = AccountUser::update_name(&state.db, c.uid, &body.name).await?;
-            Ok(HttpResponse::Ok().json(success))
-        }
-    }
+    let success = AccountUser::update_name(&state.db, claims.uid, &body.name).await?;
+    Ok(HttpResponse::Ok().json(success))
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]

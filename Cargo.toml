@@ -9,6 +9,7 @@ description = "Auto Web Data Scraper Backend"
 [dependencies]
 actix-web = "4"
 jsonwebtoken = "8.3"
+pem = "3.0"
 utoipa = { version = "3", features = ["actix_extras", "chrono", "debug"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 sqlx = { version = "0.7", features = [

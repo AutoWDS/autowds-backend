@@ -9,14 +9,8 @@ pub fn template_scope() -> Scope {
 }
 
 #[get("")]
-async fn query_template(
-    claims: Option<web::ReqData<Claims>>,
-    query: web::Query<TemplateQuery>,
-) -> impl Responder {
-    match claims {
-        None => "",
-        Some(claims) => "",
-    }
+async fn query_template(claims: Claims, query: web::Query<TemplateQuery>) -> impl Responder {
+    ""
 }
 
 #[get("/{id}")]
