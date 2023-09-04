@@ -1,9 +1,9 @@
-use ormlite::model::*;
+use ormlitex::model::*;
 
 #[derive(Debug, Model)]
-#[ormlite(table = "route_database")]
+#[ormlitex(table = "route_database")]
 pub struct RouteDatabase {
-    #[ormlite(primary_key)]
+    #[ormlitex(primary_key)]
     pub id: i64,
     pub username: String,
     pub password: String,

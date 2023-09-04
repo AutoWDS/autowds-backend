@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Page<T> {
     content: Vec<T>,
-    total: u32,
+    total: u64,
     number: u32,
     size: u32,
 }
@@ -33,5 +33,28 @@ impl PageRequest {
     }
     pub fn limit(&self) -> usize {
         self.size as usize
+    }
+}
+
+impl<T> Page<T> {
+    pub fn new(content: Vec<T>, total: u64, page: &PageRequest) -> Self {
+        Self {
+            content,
+            total,
+            number: page.page,
+            size: page.size,
+        }
+    }
+
+    pub fn map<B, F>(&self, mapper: F) -> Page<B>
+    where
+        F: Fn(&T) -> B,
+    {
+        Page {
+            content: self.content.iter().map(mapper).collect(),
+            total: self.total,
+            number: self.number,
+            size: self.size,
+        }
     }
 }

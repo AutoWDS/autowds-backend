@@ -43,9 +43,7 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let mut authenticate_pass: bool = false;
-
-        // 没有忽略的请求，需要对jwt进行解码
+        // 对jwt进行解码
         if let Some(auth_token) = req.headers().get(header::AUTHORIZATION) {
             let token = auth_token.to_str().unwrap();
             match jwt::decode(token) {

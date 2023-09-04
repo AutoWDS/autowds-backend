@@ -1,8 +1,9 @@
 use super::enums::ProductEdition;
 use super::enums::TemplateTopic;
+use super::page::Page;
 use super::page::PageRequest;
 use chrono::NaiveDateTime;
-use ormlite::{model::*, Result};
+use ormlitex::{model::*, Result};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -10,9 +11,9 @@ use sqlx::types::Json;
 use sqlx::PgPool;
 
 #[derive(Debug, Model)]
-#[ormlite(table = "task_template")]
+#[ormlitex(table = "task_template")]
 pub struct TaskTemplate {
-    #[ormlite(primary_key)]
+    #[ormlitex(primary_key)]
     pub id: i64,
     pub created: NaiveDateTime,
     pub modified: NaiveDateTime,
@@ -33,22 +34,21 @@ impl TaskTemplate {
         db: &PgPool,
         query: &TemplateQuery,
         page: &PageRequest,
-    ) -> Result<Vec<TaskTemplate>> {
-        let mut query_builder = TaskTemplate::select();
-        if let Some(name) = &query.name {
-            query_builder = query_builder.where_bind("name like '%?'", name);
-        }
-        if let Some(topic) = &query.topic {
-            query_builder = query_builder.where_bind("topic=?", topic);
-        }
-        if let Some(edition) = &query.edition {
-            query_builder = query_builder.where_bind("edition=?", edition);
-        }
-        query_builder
+    ) -> Result<Page<TaskTemplate>> {
+        let total = 10;
+        // TODO
+        //let total =
+
+        let content = TaskTemplate::select()
+            .where_bind_option("name like '%?'", query.name.as_ref())
+            .where_bind_option("topic=?", query.topic.as_ref())
+            .where_bind_option("edition=?", query.edition.as_ref())
             .offset(page.offset())
             .limit(page.limit())
             .fetch_all(db)
-            .await
+            .await?;
+
+        Ok(Page::new(content, total, page))
     }
 }
 

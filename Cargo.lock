@@ -375,7 +375,7 @@ dependencies = [
  "lettre",
  "log",
  "num_cpus",
- "ormlite",
+ "ormlitex",
  "rand",
  "rayon",
  "reqwest",
@@ -1895,13 +1895,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ormlite"
+name = "ormlitex"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "379d48b1ed7b0b81259b00f4f7ee0d8ef7c9e2ea0d4532e6bc1494ff349af729"
+checksum = "07883e561847df63465d3396c23d61e6d050682d9c9f3c4521bfeab19e1c4c35"
 dependencies = [
- "ormlite-core",
- "ormlite-macro",
+ "ormlitex-core",
+ "ormlitex-macro",
  "sqlmo",
  "sqlx",
  "sqlx-core",
@@ -1910,10 +1910,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "ormlite-attr"
+name = "ormlitex-attr"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1855d0710884233155559df52bbff68deed2f9e845ba1e25f961a26d6a822ea0"
+checksum = "75cc2a4a5a75fa5bed9f42b8e97a30df7261e76e0e14ee68915672f129266a03"
 dependencies = [
  "anyhow",
  "convert_case 0.6.0",
@@ -1928,15 +1928,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ormlite-core"
+name = "ormlitex-core"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50b655b74cc9617ccecfe1a9c863c23f5e4483d554a15f9c71da0b0c27461038"
+checksum = "bf9708197f9baa5d6c87c61369bd9c14cd30750dd8043f4d37dfef11777c651e"
 dependencies = [
  "anyhow",
  "async-trait",
  "futures",
- "ormlite-attr",
+ "ormlitex-attr",
  "serde",
  "sqlmo",
  "sqlparser",
@@ -1946,16 +1946,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "ormlite-macro"
+name = "ormlitex-macro"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1244ce63ba0ccf10b869bf687cde5f2d99228653f7d360b4cc6600b645c4a5ff"
+checksum = "ae26d23802d6b920dc92aeef5a2b2aedef99b67f014f5fa4efe81e48bebc896c"
 dependencies = [
  "itertools 0.11.0",
  "lazy_static",
  "once_cell",
- "ormlite-attr",
- "ormlite-core",
+ "ormlitex-attr",
+ "ormlitex-core",
  "proc-macro2",
  "quote",
  "sqlx",

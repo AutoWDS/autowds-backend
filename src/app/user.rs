@@ -2,14 +2,14 @@ use actix_web::{error, get, patch, post, web, HttpResponse, Responder, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
 use deadpool_redis::redis;
-use ormlite::model::*;
+use ormlitex::model::*;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use utoipa::{OpenApi, ToSchema};
 use validator::Validate;
 
 use crate::http::error::Result;
-use crate::model::account_user::AccountUser;
+use crate::model::account_user::{AccountUser, NewAccountUser};
 use crate::model::enums::ProductEdition;
 use crate::utils::jwt::Claims;
 use crate::utils::mail::{self, ValidateCodeMailTemplate};
@@ -54,8 +54,7 @@ async fn register(
         return Err(error::ErrorBadRequest("邮箱已被注册").into());
     }
 
-    let user = AccountUser {
-        id: None,
+    let user = NewAccountUser {
         locked: false,
         edition: ProductEdition::L0,
         email: String::from(&body.email),

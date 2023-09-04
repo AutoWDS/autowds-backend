@@ -1,7 +1,7 @@
 use actix_web::{middleware::ErrorHandlers, web, App, HttpServer};
 use deadpool_redis::{Config, Pool, Runtime};
 use envconfig::Envconfig;
-use ormlite::postgres::{PgPool, PgPoolOptions};
+use ormlitex::postgres::{PgPool, PgPoolOptions};
 use std::net::SocketAddr;
 
 mod app;

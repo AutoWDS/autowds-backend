@@ -2,7 +2,7 @@ use actix_web::http::header::ContentType;
 use actix_web::{error, post, web, HttpResponse, Scope};
 use actix_web_validator::Json;
 use chrono::Local;
-use ormlite::model::*;
+use ormlitex::model::*;
 use serde::Deserialize;
 use std::net::IpAddr;
 use validator::Validate;
@@ -39,7 +39,7 @@ async fn login(
         }
     };
 
-    let claims = Claims::new(user.id.unwrap());
+    let claims = Claims::new(user.id);
     return Ok(jwt::encode(claims).map(|token| {
         HttpResponse::Ok()
             .content_type(ContentType::plaintext())

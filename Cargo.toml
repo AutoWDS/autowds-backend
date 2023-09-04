@@ -17,7 +17,7 @@ sqlx = { version = "0.7", features = [
     "chrono",
     "ipnetwork",
 ] }
-ormlite = { version = "0.17", features = ["postgres"] }
+ormlitex = { version = "0.17", features = ["postgres"] }
 deadpool-redis = "0.12"
 chrono = { version = "0.4", features = ["serde"] }
 ipnetwork = "0.20"

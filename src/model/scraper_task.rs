@@ -1,12 +1,12 @@
 use chrono::NaiveDateTime;
-use ormlite::model::*;
+use ormlitex::model::*;
 use serde_json::Value;
 use sqlx::types::Json;
 
 #[derive(Debug, Model)]
-#[ormlite(table = "scraper_task")]
+#[ormlitex(table = "scraper_task")]
 pub struct ScraperTask {
-    #[ormlite(primary_key)]
+    #[ormlitex(primary_key)]
     pub id: i64,
     pub created: NaiveDateTime,
     pub modified: NaiveDateTime,

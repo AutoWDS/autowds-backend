@@ -2,16 +2,16 @@ use std::net::IpAddr;
 
 use super::enums::ProductEdition;
 use chrono::{Local, NaiveDateTime};
-use ormlite::{model::*, Result};
+use ormlitex::{model::*, Result};
 use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
 
 #[derive(Clone, Debug, Model, Serialize, ToSchema)]
-#[ormlite(table = "account_user")]
+#[ormlitex(table = "account_user", insertable = NewAccountUser)]
 pub struct AccountUser {
-    #[ormlite(primary_key)]
-    pub id: Option<i64>,
+    #[ormlitex(primary_key)]
+    pub id: i64,
     pub created: NaiveDateTime,
     pub modified: NaiveDateTime,
     pub edition: ProductEdition,
@@ -27,7 +27,7 @@ pub struct AccountUser {
 impl AccountUser {
     pub async fn exists_by_email(db: &PgPool, email: &str) -> Result<bool> {
         let (exists,): (bool,) =
-            ormlite::query_as("SELECT count(*)>0 FROM account_user where email=$1")
+            ormlitex::query_as("SELECT count(*)>0 FROM account_user where email=$1")
                 .bind(email)
                 .fetch_one(db)
                 .await?;
