@@ -11,7 +11,7 @@ use spring_web::axum::Json;
 use spring_web::error::{KnownWebError, Result};
 use spring_web::extractor::{Component, Path, Query};
 use spring_web::{axum::response::IntoResponse, get};
-use spring_web::{delete, patch, post, put};
+use spring_web::{delete, patch, post};
 
 #[get("/task")]
 async fn query_task(
