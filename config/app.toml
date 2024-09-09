@@ -12,3 +12,6 @@ uri = "postgres://postgres:xudjf23adj213@localhost:5432/autowds"
 
 [sea-orm-web]
 one_indexed = true
+
+[redis]
+uri = "redis://127.0.0.1/"
