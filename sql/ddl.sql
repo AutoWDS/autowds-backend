@@ -50,3 +50,15 @@ create table if not exists favorite (
     template_id bigint not null,
     unique (user_id, template_id)
 );
+--- scraper_task
+create sequence seq_scraper_task;
+create table scraper_task (
+    id bigint primary key default nextval('seq_scraper_task'),
+    created timestamp not null,
+    modified timestamp not null,
+    user_id bigint not null,
+    deleted boolean not null,
+    name varchar(60) not null,
+    rule jsonb not null
+);
+create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);

@@ -6,3 +6,4 @@ mod _entities;
 pub mod account_user;
 pub mod task_template;
 pub mod favorite;
+pub mod scraper_task;
