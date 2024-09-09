@@ -5,6 +5,7 @@ use crate::utils::jwt::Claims;
 use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
+use serde_json::Value;
 use spring_sea_orm::pagination::{Pagination, PaginationExt};
 use spring_web::axum::Json;
 use spring_web::error::{KnownWebError, Result};
@@ -81,15 +82,7 @@ async fn get_task(
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
 ) -> Result<impl IntoResponse> {
-    let task = ScraperTask::find_by_id(id)
-        .one(&db)
-        .await
-        .context("find scraper task failed")?
-        .ok_or_else(|| KnownWebError::not_found("任务不存在"))?;
-
-    if task.user_id != claims.uid {
-        Err(KnownWebError::forbidden("数据无权访问"))?;
-    }
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     Ok(Json(task))
 }
@@ -100,15 +93,7 @@ async fn delete_task(
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
 ) -> Result<impl IntoResponse> {
-    let task = ScraperTask::find_by_id(id)
-        .one(&db)
-        .await
-        .context("find scraper task failed")?
-        .ok_or_else(|| KnownWebError::not_found("任务不存在"))?;
-
-    if task.user_id != claims.uid {
-        Err(KnownWebError::forbidden("数据无权访问"))?;
-    }
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
         id: Set(task.id),
@@ -122,19 +107,57 @@ async fn delete_task(
     Ok(Json(task.id))
 }
 
-#[put("/task/:id")]
-async fn update_task() -> Result<impl IntoResponse> {
-    Ok("")
-}
-
 #[get("/task/:id/rule")]
-async fn get_task_rule() -> Result<impl IntoResponse> {
-    Ok("")
+async fn get_task_rule(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+) -> Result<impl IntoResponse> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    Ok(Json(task.rule))
 }
 
 #[patch("/task/:id/rule")]
-async fn update_task_rule() -> Result<impl IntoResponse> {
-    Ok("")
+async fn update_task_rule(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(rule): Json<Value>,
+) -> Result<impl IntoResponse> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    scraper_task::ActiveModel {
+        id: Set(task.id),
+        rule: Set(rule),
+        ..Default::default()
+    }
+    .save(&db)
+    .await
+    .context("save scraper task failed")?;
+
+    Ok(Json(task.id))
+}
+
+#[patch("/task/:id/name")]
+async fn update_task(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(name): Json<String>,
+) -> Result<impl IntoResponse> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    scraper_task::ActiveModel {
+        id: Set(task.id),
+        name: Set(name),
+        ..Default::default()
+    }
+    .save(&db)
+    .await
+    .context("save scraper task failed")?;
+
+    Ok(Json(task.id))
 }
 
 #[patch("/task/:id/cron")]
