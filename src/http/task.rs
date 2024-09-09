@@ -1,7 +1,11 @@
 use crate::dto::task::ScraperTaskQuery;
+use crate::model::prelude::ScraperTask;
+use crate::model::scraper_task;
 use crate::utils::jwt::Claims;
-use sea_orm::DbConn;
-use spring_sea_orm::pagination::Pagination;
+use anyhow::Context;
+use sea_orm::{ColumnTrait, DbConn, EntityTrait, QueryFilter};
+use spring_sea_orm::pagination::{Pagination, PaginationExt};
+use spring_web::axum::Json;
 use spring_web::error::Result;
 use spring_web::extractor::{Component, Query};
 use spring_web::{axum::response::IntoResponse, get};
@@ -14,7 +18,17 @@ async fn query_task(
     Component(db): Component<DbConn>,
     pagination: Pagination,
 ) -> Result<impl IntoResponse> {
-    Ok("")
+    let mut filter = scraper_task::Column::UserId.eq(claims.uid);
+    filter = match q.name {
+        Some(name) => filter.and(scraper_task::Column::Name.starts_with(name)),
+        None => filter,
+    };
+    let page = ScraperTask::find()
+        .filter(filter)
+        .page(&db, pagination)
+        .await
+        .context("query scraper task failed")?;
+    Ok(Json(page))
 }
 
 #[post("/task")]
