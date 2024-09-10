@@ -237,6 +237,7 @@ dependencies = [
  "jsonwebtoken",
  "lazy_static",
  "pem 3.0.4",
+ "problemdetails",
  "rand",
  "sea-orm",
  "serde",
@@ -2062,6 +2063,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "problemdetails"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12a1742b691ab83cfe43b9bab1801c18b5ebac686471d01577a587843d3d421b"
+dependencies = [
+ "axum",
+ "http",
+ "serde",
+ "serde_json",
+ "tower-http",
+]
+
+[[package]]
 name = "proc-macro-crate"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2583,6 +2597,7 @@ version = "1.0.128"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ff5456707a1de34e7e37f2a6fd3d3f808c318259cbd01ab6377795054b483d8"
 dependencies = [
+ "indexmap",
  "itoa",
  "memchr",
  "ryu",

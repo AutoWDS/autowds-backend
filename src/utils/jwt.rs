@@ -53,7 +53,7 @@ where
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|_| KnownWebError::bad_request("invalid token"))?;
+            .map_err(|_| KnownWebError::unauthorized("invalid token"))?;
         // Decode the user data
         let claims = decode(bearer.token())?;
 
@@ -92,7 +92,7 @@ where
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|_| KnownWebError::bad_request("invalid token"))?;
+            .map_err(|_| KnownWebError::unauthorized("invalid token"))?;
         // Decode the user data
         let claims = decode(bearer.token())?;
 
@@ -116,7 +116,7 @@ pub fn decode(token: &str) -> Result<Claims> {
     let token_data =
         jsonwebtoken::decode::<Claims>(&token, &DECODE_KEY, &validation).map_err(|e| {
             tracing::error!("{:?}", e);
-            KnownWebError::bad_request("invalid token")
+            KnownWebError::unauthorized("invalid token")
         })?;
     Ok(token_data.claims)
 }
