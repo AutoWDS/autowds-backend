@@ -1,17 +1,24 @@
 use sea_orm::{prelude::DateTime, sea_query::IntoCondition, ColumnTrait, Condition};
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use validator::Validate;
+use serde_with::NoneAsEmptyString;
 
 use crate::model::{
     sea_orm_active_enums::{ProductEdition, TemplateTopic},
     task_template,
 };
 
+#[serde_as]
 #[derive(Deserialize, Validate)]
 pub struct TemplateQuery {
     #[validate(length(max = 30, message = "查询名称过长"))]
     pub name: Option<String>,
+    #[serde_as(as = "NoneAsEmptyString")]
+    #[serde(default)]
     pub topic: Option<TemplateTopic>,
+    #[serde_as(as = "NoneAsEmptyString")]
+    #[serde(default)]
     pub edition: Option<ProductEdition>,
 }
 

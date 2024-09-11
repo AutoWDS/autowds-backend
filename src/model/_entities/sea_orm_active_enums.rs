@@ -3,7 +3,17 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "product_edition")]
 pub enum ProductEdition {
     #[sea_orm(string_value = "L0")]
@@ -15,7 +25,17 @@ pub enum ProductEdition {
     #[sea_orm(string_value = "L3")]
     L3,
 }
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "template_topic")]
 pub enum TemplateTopic {
     #[sea_orm(string_value = "BIDDING")]
