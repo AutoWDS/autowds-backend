@@ -3,6 +3,10 @@ name = "autowds-backend"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "autowds-backend"
+path = "src/main.rs"
+
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 spring = "0.1.1"
