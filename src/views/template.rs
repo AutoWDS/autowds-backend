@@ -1,13 +1,12 @@
-use sea_orm::{prelude::DateTime, sea_query::IntoCondition, ColumnTrait, Condition};
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use validator::Validate;
-use serde_with::NoneAsEmptyString;
-
 use crate::model::{
     sea_orm_active_enums::{ProductEdition, TemplateTopic},
     task_template,
 };
+use sea_orm::{prelude::DateTime, sea_query::IntoCondition, ColumnTrait, Condition};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use serde_with::NoneAsEmptyString;
+use validator::Validate;
 
 #[serde_as]
 #[derive(Deserialize, Validate)]
