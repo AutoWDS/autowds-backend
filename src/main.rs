@@ -1,6 +1,6 @@
 mod config;
-mod dto;
-mod http;
+mod views;
+mod router;
 mod model;
 mod utils;
 
@@ -17,7 +17,7 @@ async fn main() {
         .add_plugin(SeaOrmPlugin)
         .add_plugin(MailPlugin)
         .add_plugin(RedisPlugin)
-        .add_router(http::router())
+        .add_router(router::router())
         .run()
         .await
 }

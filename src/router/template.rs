@@ -1,5 +1,5 @@
 use crate::{
-    dto::template::{ListTemplateResp, TemplateQuery},
+    views::template::{ListTemplateResp, TemplateQuery},
     model::{
         favorite,
         prelude::{Favorite, TaskTemplate},

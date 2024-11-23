@@ -1,5 +1,5 @@
 use crate::{
-    dto::user::AuthenticationToken,
+    views::user::AuthenticationToken,
     model::{account_user, prelude::AccountUser},
     utils::jwt::{self, Claims},
 };

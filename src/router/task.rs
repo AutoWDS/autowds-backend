@@ -1,4 +1,4 @@
-use crate::dto::task::{ScraperTaskQuery, ScraperTaskReq};
+use crate::views::task::{ScraperTaskQuery, ScraperTaskReq};
 use crate::model::prelude::ScraperTask;
 use crate::model::scraper_task;
 use crate::utils::jwt::Claims;

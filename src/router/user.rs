@@ -1,6 +1,6 @@
 use crate::{
     config::mail::Email,
-    dto::user::{
+    views::user::{
         RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
     },
     model::{account_user, prelude::AccountUser, sea_orm_active_enums::ProductEdition},
