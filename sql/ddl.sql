@@ -1,4 +1,4 @@
-create database autowds;
+--- create database autowds;
 --- user
 create sequence if not exists seq_account_user;
 create type product_edition as enum ('L0', 'L1', 'L2', 'L3');
