@@ -15,7 +15,7 @@ RUN cargo build --release
 # runner container
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y libssl-dev && apt-get clean
+RUN apt-get update && apt-get install -y libssl-dev ca-certificates && update-ca-certificates && apt-get clean
 
 ENV RUST_LOG=info
 
