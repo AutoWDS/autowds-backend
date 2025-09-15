@@ -23,7 +23,7 @@ pub async fn gen_validate_code_with_duration(
     let key = validate_redis_key(email);
     let rand_code = rand::rand_alphanumeric(6);
     redis
-        .set_ex(&key, &rand_code, seconds)
+        .set_ex::<_, _, ()>(&key, &rand_code, seconds)
         .await
         .with_context(|| format!("set {} to redis failed", key))?;
     Ok(rand_code)

@@ -29,7 +29,7 @@ async fn query(
 ) -> Result<Json<Page<ListTemplateResp>>> {
     let page = TaskTemplate::find()
         .filter(query)
-        .page(&db, pagination)
+        .page(&db, &pagination)
         .await
         .context("query task template page failed")?;
     if claims.is_none() {
@@ -63,7 +63,7 @@ async fn my_favorite(
 ) -> Result<impl IntoResponse> {
     let favs = Favorite::find()
         .filter(favorite::Column::UserId.eq(claims.uid))
-        .page(&db, pagination.clone())
+        .page(&db, &pagination)
         .await
         .context("query my favorite failed")?;
 
@@ -77,10 +77,10 @@ async fn my_favorite(
         .map(|m| ListTemplateResp::new(m, true))
         .collect_vec();
 
-    Ok(Json(Page::new(templates, pagination, favs.total_elements)))
+    Ok(Json(Page::new(templates, &pagination, favs.total_elements)))
 }
 
-#[post("/:template_id/favorite")]
+#[post("/{template_id}/favorite")]
 async fn add_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,
@@ -103,7 +103,7 @@ async fn add_favorite(
     Ok(Json(fav))
 }
 
-#[delete("/:template_id/favorite")]
+#[delete("/{template_id}/favorite")]
 async fn delete_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,

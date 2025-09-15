@@ -5,7 +5,6 @@ use axum_extra::TypedHeader;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use spring_web::async_trait;
 use spring_web::axum::http::header;
 use spring_web::axum::http::request::Parts;
 use spring_web::axum::RequestPartsExt;
@@ -38,7 +37,6 @@ impl Claims {
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where
     S: Send + Sync,
@@ -74,7 +72,6 @@ impl OptionalClaims {
     }
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for OptionalClaims
 where
     S: Send + Sync,

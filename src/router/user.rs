@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use anyhow::Context;
-use axum_client_ip::SecureClientIp;
+use axum_client_ip::ClientIp;
 use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, Set};
 use spring_mail::Mailer;
 use spring_redis::Redis;
@@ -27,7 +27,7 @@ use spring_web::{extractor::Config, get, patch, post};
 async fn register(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
-    SecureClientIp(client_ip): SecureClientIp,
+    ClientIp(client_ip): ClientIp,
     Json(body): Json<RegisterReq>,
 ) -> Result<Json<UserResp>> {
     let code = get_validate_code(&mut redis, &body.email).await?;
@@ -128,7 +128,7 @@ async fn reset_validate_code(
 async fn reset_password(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
-    SecureClientIp(client_ip): SecureClientIp,
+    ClientIp(client_ip): ClientIp,
     Json(req): Json<ResetPasswdReq>,
 ) -> Result<impl IntoResponse> {
     let code = get_validate_code(&mut redis, &req.email)

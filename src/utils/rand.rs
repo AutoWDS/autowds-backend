@@ -6,11 +6,11 @@ pub fn rand_alphanumeric(length: usize) -> String {
 }
 
 fn generate_random_string(charset: &[u8], length: usize) -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let random_string: String = (0..length)
         .map(|_| {
-            let index = rng.gen_range(0..charset.len());
+            let index = rng.random_range(0..charset.len());
             charset[index] as char
         })
         .collect();

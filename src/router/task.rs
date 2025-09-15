@@ -27,7 +27,7 @@ async fn query_task(
     };
     let page = ScraperTask::find()
         .filter(filter)
-        .page(&db, pagination)
+        .page(&db, &pagination)
         .await
         .context("query scraper task failed")?;
     Ok(Json(page))
@@ -76,7 +76,7 @@ async fn add_batch_task(
     Ok(Json(r.last_insert_id))
 }
 
-#[get("/task/:id")]
+#[get("/task/{id}")]
 async fn get_task(
     claims: Claims,
     Path(id): Path<i64>,
@@ -87,7 +87,7 @@ async fn get_task(
     Ok(Json(task))
 }
 
-#[delete("/task/:id")]
+#[delete("/task/{id}")]
 async fn delete_task(
     claims: Claims,
     Path(id): Path<i64>,
@@ -107,7 +107,7 @@ async fn delete_task(
     Ok(Json(task.id))
 }
 
-#[get("/task/:id/rule")]
+#[get("/task/{id}/rule")]
 async fn get_task_rule(
     claims: Claims,
     Path(id): Path<i64>,
@@ -118,7 +118,7 @@ async fn get_task_rule(
     Ok(Json(task.rule))
 }
 
-#[patch("/task/:id/rule")]
+#[patch("/task/{id}/rule")]
 async fn update_task_rule(
     claims: Claims,
     Path(id): Path<i64>,
@@ -139,7 +139,7 @@ async fn update_task_rule(
     Ok(Json(task.id))
 }
 
-#[patch("/task/:id/name")]
+#[patch("/task/{id}/name")]
 async fn update_task(
     claims: Claims,
     Path(id): Path<i64>,
@@ -160,17 +160,17 @@ async fn update_task(
     Ok(Json(task.id))
 }
 
-#[patch("/task/:id/cron")]
+#[patch("/task/{id}/cron")]
 async fn update_task_cron() -> Result<impl IntoResponse> {
     Ok("")
 }
 
-#[get("/task/:id/schedule")]
+#[get("/task/{id}/schedule")]
 async fn get_task_schedule_info() -> Result<impl IntoResponse> {
     Ok("")
 }
 
-#[patch("/task/:id/schedule")]
+#[patch("/task/{id}/schedule")]
 async fn update_task_schedule_info() -> Result<impl IntoResponse> {
     Ok("")
 }
