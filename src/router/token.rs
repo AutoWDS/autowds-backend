@@ -19,7 +19,7 @@ async fn login(
     Json(body): Json<AuthenticationToken>,
 ) -> Result<String> {
     let user = AccountUser::find()
-        .filter(account_user::Column::Edition.eq(&body.email))
+        .filter(account_user::Column::Email.eq(&body.email))
         .one(&db)
         .await
         .context("query db failed")?
