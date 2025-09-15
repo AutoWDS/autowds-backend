@@ -1,3 +1,6 @@
+[web]
+graceful = true
+
 [mail]
 host = "smtp.163.com"                                                      # SMTP mail server address,
 port = 465                                                                 # SMTP server port number
@@ -8,10 +11,10 @@ auth = { user = "hff1996723@163.com", password = "${MAIL_AUTH_PASSWORD}" } # Aut
 from = "hff1996723@163.com"
 
 [sea-orm]
-uri = "postgres://postgres:xudjf23adj213@localhost:5432/autowds"
+uri = "${DATABASE_URL:postgres://postgres:xudjf23adj213@localhost:5432/autowds}"
 
 [sea-orm-web]
 one_indexed = true
 
 [redis]
-uri = "redis://127.0.0.1/"
+uri = "${REDIS_URL:redis://localhost}"
