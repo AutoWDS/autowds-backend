@@ -56,7 +56,7 @@ async fn register(
         name: Set(body.name),
         email: Set(body.email),
         passwd: Set(body.passwd),
-        last_login: Set(Some(client_ip.to_string())),
+        last_login: Set(Some(client_ip.into())),
         ..Default::default()
     }
     .insert(&db)
@@ -149,7 +149,7 @@ async fn reset_password(
     let u = account_user::ActiveModel {
         id: Set(u.id),
         passwd: Set(req.passwd),
-        last_login: Set(Some(client_ip.to_string())),
+        last_login: Set(Some(client_ip.into())),
         ..Default::default()
     }
     .update(&db)

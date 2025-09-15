@@ -17,8 +17,7 @@ pub struct Model {
     pub email: String,
     pub passwd: String,
     pub locked: bool,
-    #[sea_orm(column_type = "custom(\"inet\")", nullable)]
-    pub last_login: Option<String>,
+    pub last_login: Option<IpNetwork>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

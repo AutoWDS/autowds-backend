@@ -1519,6 +1519,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "iri-string"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2535,6 +2544,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "futures-util",
+ "ipnetwork",
  "log",
  "ouroboros",
  "pgvector",
@@ -2576,6 +2586,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "inherent",
+ "ipnetwork",
  "ordered-float",
  "rust_decimal",
  "serde_json",
@@ -2591,6 +2602,7 @@ checksum = "b0019f47430f7995af63deda77e238c17323359af241233ec768aba1faea7608"
 dependencies = [
  "bigdecimal",
  "chrono",
+ "ipnetwork",
  "rust_decimal",
  "sea-query",
  "serde_json",
@@ -3018,6 +3030,7 @@ dependencies = [
  "hashbrown 0.15.5",
  "hashlink",
  "indexmap 2.11.1",
+ "ipnetwork",
  "log",
  "memchr",
  "native-tls",
@@ -3144,6 +3157,7 @@ dependencies = [
  "hkdf",
  "hmac",
  "home",
+ "ipnetwork",
  "itoa",
  "log",
  "md-5",

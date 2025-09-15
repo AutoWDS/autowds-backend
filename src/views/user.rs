@@ -79,7 +79,7 @@ impl From<account_user::Model> for UserResp {
             name: user.name,
             email: user.email,
             locked: user.locked,
-            last_login: user.last_login,
+            last_login: user.last_login.map(|ip| ip.to_string()),
         }
     }
 }
