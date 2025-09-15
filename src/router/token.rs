@@ -1,12 +1,13 @@
 use crate::{
-    views::user::AuthenticationToken,
     model::{account_user, prelude::AccountUser},
     utils::jwt::{self, Claims},
+    views::user::AuthenticationToken,
 };
 use anyhow::Context as _;
 use sea_orm::{ColumnTrait as _, EntityTrait as _, QueryFilter as _};
+use serde_json::json;
 use spring_sea_orm::DbConn;
-use spring_web::post;
+use spring_web::{axum::response::IntoResponse, post};
 use spring_web::{
     axum::Json,
     error::{KnownWebError, Result},
@@ -17,7 +18,7 @@ use spring_web::{
 async fn login(
     Component(db): Component<DbConn>,
     Json(body): Json<AuthenticationToken>,
-) -> Result<String> {
+) -> Result<impl IntoResponse> {
     let user = AccountUser::find()
         .filter(account_user::Column::Email.eq(&body.email))
         .one(&db)
@@ -29,7 +30,13 @@ async fn login(
         Err(KnownWebError::unauthorized("密码错误"))?;
     }
 
-    let claims = Claims::new(user);
-
-    Ok(jwt::encode(claims)?)
+    let claims = Claims::new(user.clone());
+    let token = jwt::encode(claims)?;
+    Ok(Json(json!({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "edition": user.edition,
+        "token": token,
+    })))
 }
