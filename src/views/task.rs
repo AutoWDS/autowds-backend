@@ -19,3 +19,12 @@ pub struct ScraperTaskReq {
     #[serde(default)]
     pub rule: Value,
 }
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ScraperUpdateTaskReq {
+    #[serde(default)]
+    pub data: Value,
+
+    #[serde(default)]
+    pub rule: Value,
+}

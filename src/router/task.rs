@@ -1,7 +1,7 @@
 use crate::model::prelude::ScraperTask;
 use crate::model::scraper_task;
 use crate::utils::jwt::Claims;
-use crate::views::task::{ScraperTaskQuery, ScraperTaskReq};
+use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
@@ -113,13 +113,12 @@ async fn update_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(body): Json<ScraperTaskReq>,
+    Json(body): Json<ScraperUpdateTaskReq>,
 ) -> Result<impl IntoResponse> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
         id: Set(task.id),
-        name: Set(body.name),
         data: Set(body.data),
         rule: Set(body.rule),
         ..Default::default()
