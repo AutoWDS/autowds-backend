@@ -13,5 +13,7 @@ pub struct ScraperTaskReq {
     #[validate(length(max = 80, message = "查询名称过长"))]
     pub name: String,
 
+    pub data: Value,
+
     pub rule: Value,
 }

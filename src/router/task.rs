@@ -1,7 +1,7 @@
-use crate::views::task::{ScraperTaskQuery, ScraperTaskReq};
 use crate::model::prelude::ScraperTask;
 use crate::model::scraper_task;
 use crate::utils::jwt::Claims;
+use crate::views::task::{ScraperTaskQuery, ScraperTaskReq};
 use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
@@ -11,7 +11,7 @@ use spring_web::axum::Json;
 use spring_web::error::{KnownWebError, Result};
 use spring_web::extractor::{Component, Path, Query};
 use spring_web::{axum::response::IntoResponse, get};
-use spring_web::{delete, patch, post};
+use spring_web::{delete, patch, post, put};
 
 #[get("/task")]
 async fn query_task(
@@ -107,6 +107,29 @@ async fn delete_task(
     Ok(Json(task.id))
 }
 
+#[put("/task/{id}")]
+async fn update_task(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(body): Json<ScraperTaskReq>,
+) -> Result<impl IntoResponse> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    scraper_task::ActiveModel {
+        id: Set(task.id),
+        name: Set(body.name),
+        data: Set(body.data),
+        rule: Set(body.rule),
+        ..Default::default()
+    }
+    .save(&db)
+    .await
+    .context("save scraper task failed")?;
+
+    Ok(Json(task.id))
+}
+
 #[get("/task/{id}/rule")]
 async fn get_task_rule(
     claims: Claims,
@@ -140,7 +163,7 @@ async fn update_task_rule(
 }
 
 #[patch("/task/{id}/name")]
-async fn update_task(
+async fn update_task_name(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
