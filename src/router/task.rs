@@ -42,6 +42,7 @@ async fn add_task(
     let task = scraper_task::ActiveModel {
         user_id: Set(claims.uid),
         name: Set(body.name),
+        data: Set(body.data),
         rule: Set(body.rule),
         ..Default::default()
     }
