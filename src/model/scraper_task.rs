@@ -16,6 +16,7 @@ impl ActiveModelBehavior for ActiveModel {
     {
         if insert {
             self.created = Set(Local::now().naive_local());
+            self.deleted = Set(false);
         }
         self.modified = Set(Local::now().naive_local());
         Ok(self)
