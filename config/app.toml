@@ -1,6 +1,10 @@
 [web]
 graceful = true
 
+[web.openapi]
+doc_prefix = "/docs"
+info = { title = "autowds api document", version = "0.0.1" }
+
 [mail]
 host = "smtp.163.com"                                                      # SMTP mail server address,
 port = 465                                                                 # SMTP server port number
