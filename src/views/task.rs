@@ -1,14 +1,15 @@
+use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::Value;
 use validator::Validate;
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperTaskQuery {
     #[validate(length(max = 80, message = "查询名称过长"))]
     pub name: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperTaskReq {
     #[validate(length(max = 80, message = "查询名称过长"))]
     pub name: String,
@@ -20,7 +21,7 @@ pub struct ScraperTaskReq {
     pub rule: Value,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperUpdateTaskReq {
     #[serde(default)]
     pub data: Value,

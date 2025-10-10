@@ -1,29 +1,31 @@
 use crate::{
     config::mail::Email,
-    views::user::{
-        RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
-    },
     model::{account_user, prelude::AccountUser, sea_orm_active_enums::ProductEdition},
+    router::ClientIp,
     utils::{
         jwt::{self, Claims},
         mail,
         validate_code::{gen_validate_code, get_validate_code},
     },
+    views::user::{
+        RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
+    },
 };
 use anyhow::Context;
-use axum_client_ip::ClientIp;
 use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, Set};
 use spring_mail::Mailer;
 use spring_redis::Redis;
 use spring_sea_orm::DbConn;
 use spring_web::{
-    axum::{response::IntoResponse, Json},
+    axum::Json,
     error::{KnownWebError, Result},
     extractor::Component,
 };
-use spring_web::{extractor::Config, get, patch, post};
+use spring_web::{extractor::Config, get_api, patch_api, post_api};
 
-#[post("/user")]
+/// 注册
+/// @tag user
+#[post_api("/user")]
 async fn register(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
@@ -56,7 +58,7 @@ async fn register(
         name: Set(body.name),
         email: Set(body.email),
         passwd: Set(body.passwd),
-        last_login: Set(Some(client_ip.into())),
+        last_login: Set(Some(client_ip.0.into())),
         ..Default::default()
     }
     .insert(&db)
@@ -66,11 +68,10 @@ async fn register(
     Ok(Json(user.into()))
 }
 
-#[get("/user")]
-async fn current_user(
-    claims: Claims,
-    Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+/// 获取当前用户信息
+/// @tag user
+#[get_api("/user")]
+async fn current_user(claims: Claims, Component(db): Component<DbConn>) -> Result<Json<UserResp>> {
     let user = AccountUser::find_by_id(claims.uid)
         .one(&db)
         .await
@@ -84,13 +85,15 @@ async fn current_user(
     Ok(Json(UserResp::from(user)))
 }
 
-#[post("/user/register-validate-code")]
+/// 注册验证码
+/// @tag user
+#[post_api("/user/register-validate-code")]
 async fn register_validate_code(
     Component(mut redis): Component<Redis>,
     Component(mailer): Component<Mailer>,
     Config(email): Config<Email>,
     Json(body): Json<SendEmailReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<bool>> {
     let code = gen_validate_code(&mut redis, &body.email).await?;
 
     let template = ValidateCodeEmailTemplate {
@@ -104,13 +107,15 @@ async fn register_validate_code(
     Ok(Json(success))
 }
 
-#[post("/user/reset-validate-code")]
+/// 重置验证码
+/// @tag user
+#[post_api("/user/reset-validate-code")]
 async fn reset_validate_code(
     Component(mut redis): Component<Redis>,
     Component(mailer): Component<Mailer>,
     Config(email): Config<Email>,
     Json(body): Json<SendEmailReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<bool>> {
     let code = gen_validate_code(&mut redis, &body.email).await?;
 
     let template = ValidateCodeEmailTemplate {
@@ -124,13 +129,15 @@ async fn reset_validate_code(
     Ok(Json(success))
 }
 
-#[post("/user/passwd")]
+/// 重置密码
+/// @tag user
+#[post_api("/user/passwd")]
 async fn reset_password(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
     ClientIp(client_ip): ClientIp,
     Json(req): Json<ResetPasswdReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<String> {
     let code = get_validate_code(&mut redis, &req.email)
         .await?
         .ok_or_else(|| KnownWebError::bad_request("验证码已过期"))?;
@@ -149,7 +156,7 @@ async fn reset_password(
     let u = account_user::ActiveModel {
         id: Set(u.id),
         passwd: Set(req.passwd),
-        last_login: Set(Some(client_ip.into())),
+        last_login: Set(Some(client_ip.0.into())),
         ..Default::default()
     }
     .update(&db)
@@ -161,12 +168,14 @@ async fn reset_password(
     Ok(jwt::encode(claims)?)
 }
 
-#[patch("/user/name")]
+/// 修改用户名
+/// @tag user
+#[patch_api("/user/name")]
 async fn set_name(
     claims: Claims,
     Component(db): Component<DbConn>,
     Json(req): Json<SetNameReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<bool>> {
     let u = AccountUser::find_by_id(claims.uid)
         .one(&db)
         .await

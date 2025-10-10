@@ -1,26 +1,28 @@
 use crate::{
-    views::template::{ListTemplateResp, TemplateQuery},
     model::{
         favorite,
         prelude::{Favorite, TaskTemplate},
         task_template,
     },
     utils::jwt::{Claims, OptionalClaims},
+    views::template::{ListTemplateResp, TemplateQuery},
 };
 use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
 use spring_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use spring_web::{
-    axum::{response::IntoResponse, Json},
-    delete,
+    axum::Json,
+    delete_api,
     error::{KnownWebError, Result},
     extractor::{Component, Path, Query},
-    get, post,
+    get_api, post_api,
 };
 use std::collections::HashSet;
 
-#[get("/template")]
+/// 查询任务模板
+/// @tag template
+#[get_api("/template")]
 async fn query(
     claims: OptionalClaims,
     Component(db): Component<DbConn>,
@@ -55,12 +57,14 @@ async fn query(
     })))
 }
 
-#[get("/template/favorite")]
+/// 我收藏的任务模板
+/// @tag template
+#[get_api("/template/favorite")]
 async fn my_favorite(
     claims: Claims,
     Component(db): Component<DbConn>,
     pagination: Pagination,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<Page<ListTemplateResp>>> {
     let favs = Favorite::find()
         .filter(favorite::Column::UserId.eq(claims.uid))
         .page(&db, &pagination)
@@ -80,12 +84,14 @@ async fn my_favorite(
     Ok(Json(Page::new(templates, &pagination, favs.total_elements)))
 }
 
-#[post("/{template_id}/favorite")]
+/// 收藏任务模板
+/// @tag template
+#[post_api("/{template_id}/favorite")]
 async fn add_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,
     Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<favorite::Model>> {
     let effect = TaskTemplate::incr_fav_count_by_id(&db, template_id)
         .await
         .context("increase fav_count failed")?;
@@ -103,12 +109,14 @@ async fn add_favorite(
     Ok(Json(fav))
 }
 
-#[delete("/{template_id}/favorite")]
+/// 取消收藏任务模板
+/// @tag template
+#[delete_api("/{template_id}/favorite")]
 async fn delete_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,
     Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<bool>> {
     let effect = TaskTemplate::desc_fav_count_by_id(&db, template_id)
         .await
         .context("decrease fav_count failed")?;

@@ -1,17 +1,18 @@
 use askama::Template;
+use schemars::JsonSchema;
 use sea_orm::prelude::DateTime;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use crate::model::{account_user, sea_orm_active_enums::ProductEdition};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 pub struct AuthenticationToken {
     pub email: String,
     pub passwd: String,
 }
 
-#[derive(Debug, Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize, JsonSchema)]
 pub struct RegisterReq {
     #[validate(length(max = 30, message = "用户名不能超过30个字符"))]
     pub name: String,
@@ -29,7 +30,7 @@ pub struct RegisterReq {
     pub validate_code: String,
 }
 
-#[derive(Debug, Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize, JsonSchema)]
 pub struct ResetPasswdReq {
     #[validate(
         email(message = "邮箱格式不正确"),
@@ -42,7 +43,7 @@ pub struct ResetPasswdReq {
     pub validate_code: String,
 }
 
-#[derive(Debug, Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize, JsonSchema)]
 pub struct SendEmailReq {
     #[validate(
         email(message = "邮箱格式不正确"),
@@ -51,13 +52,13 @@ pub struct SendEmailReq {
     pub email: String,
 }
 
-#[derive(Debug, Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize, JsonSchema)]
 pub struct SetNameReq {
     #[validate(length(max = 30, message = "用户名不能超过30个字符"))]
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, JsonSchema)]
 pub struct UserResp {
     pub id: i64,
     pub created: DateTime,

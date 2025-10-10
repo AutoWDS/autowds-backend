@@ -6,20 +6,22 @@ use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
 use serde_json::Value;
-use spring_sea_orm::pagination::{Pagination, PaginationExt};
+use spring_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use spring_web::axum::response::IntoResponse;
 use spring_web::axum::Json;
 use spring_web::error::{KnownWebError, Result};
 use spring_web::extractor::{Component, Path, Query};
-use spring_web::{axum::response::IntoResponse, get};
-use spring_web::{delete, patch, post, put};
+use spring_web::{delete_api, get_api, patch_api, post_api, put_api};
 
-#[get("/task")]
+/// 查询当前用户的所有任务
+/// @tag task
+#[get_api("/task")]
 async fn query_task(
     claims: Claims,
     Query(q): Query<ScraperTaskQuery>,
     Component(db): Component<DbConn>,
     pagination: Pagination,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<Page<scraper_task::Model>>> {
     let mut filter = scraper_task::Column::UserId.eq(claims.uid);
     filter = match q.name {
         Some(name) => filter.and(scraper_task::Column::Name.starts_with(name)),
@@ -33,12 +35,14 @@ async fn query_task(
     Ok(Json(page))
 }
 
-#[post("/task")]
+/// 新增任务
+/// @tag task
+#[post_api("/task")]
 async fn add_task(
     claims: Claims,
     Component(db): Component<DbConn>,
     Json(body): Json<ScraperTaskReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<scraper_task::Model>> {
     let task = scraper_task::ActiveModel {
         user_id: Set(claims.uid),
         name: Set(body.name),
@@ -52,12 +56,14 @@ async fn add_task(
     Ok(Json(task))
 }
 
-#[post("/task/batch")]
+/// 批量新增任务
+/// @tag task
+#[post_api("/task/batch")]
 async fn add_batch_task(
     claims: Claims,
     Component(db): Component<DbConn>,
     Json(batch): Json<Vec<ScraperTaskReq>>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<i64>> {
     if batch.len() > 10 {
         Err(KnownWebError::bad_request("任务过多无法保存"))?;
     }
@@ -77,23 +83,27 @@ async fn add_batch_task(
     Ok(Json(r.last_insert_id))
 }
 
-#[get("/task/{id}")]
+/// 获取任务详情
+/// @tag task
+#[get_api("/task/{id}")]
 async fn get_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<scraper_task::Model>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     Ok(Json(task))
 }
 
-#[delete("/task/{id}")]
+/// 删除任务
+/// @tag task
+#[delete_api("/task/{id}")]
 async fn delete_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
@@ -108,13 +118,15 @@ async fn delete_task(
     Ok(Json(task.id))
 }
 
-#[put("/task/{id}")]
+/// 更新任务
+/// @tag task
+#[put_api("/task/{id}")]
 async fn update_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
     Json(body): Json<ScraperUpdateTaskReq>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
@@ -130,24 +142,28 @@ async fn update_task(
     Ok(Json(task.id))
 }
 
-#[get("/task/{id}/rule")]
+/// 获取任务规则
+/// @tag task
+#[get_api("/task/{id}/rule")]
 async fn get_task_rule(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<Value>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     Ok(Json(task.rule))
 }
 
-#[patch("/task/{id}/rule")]
+/// 更新任务规则
+/// @tag task
+#[patch_api("/task/{id}/rule")]
 async fn update_task_rule(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
     Json(rule): Json<Value>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
@@ -162,13 +178,15 @@ async fn update_task_rule(
     Ok(Json(task.id))
 }
 
-#[patch("/task/{id}/name")]
+/// 更新任务名
+/// @tag task
+#[patch_api("/task/{id}/name")]
 async fn update_task_name(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
     Json(name): Json<String>,
-) -> Result<impl IntoResponse> {
+) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
@@ -183,17 +201,17 @@ async fn update_task_name(
     Ok(Json(task.id))
 }
 
-#[patch("/task/{id}/cron")]
+// #[patch_api("/task/{id}/cron")]
 async fn update_task_cron() -> Result<impl IntoResponse> {
     Ok("")
 }
 
-#[get("/task/{id}/schedule")]
+// #[get_api("/task/{id}/schedule")]
 async fn get_task_schedule_info() -> Result<impl IntoResponse> {
     Ok("")
 }
 
-#[patch("/task/{id}/schedule")]
+// #[patch_api("/task/{id}/schedule")]
 async fn update_task_schedule_info() -> Result<impl IntoResponse> {
     Ok("")
 }

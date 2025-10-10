@@ -6,12 +6,14 @@ mod user;
 use axum_client_ip::ClientIpSource;
 use spring::config::env::Env;
 use spring_web::{
+    aide::OperationInput,
     axum::{
         body,
+        http::request::Parts,
         middleware::{self, Next},
         response::{IntoResponse, Response},
     },
-    extractor::Request,
+    extractor::{FromRequestParts, Request},
     Router,
 };
 
@@ -42,5 +44,23 @@ async fn problem_middleware(request: Request, next: Next) -> Response {
             .into_response()
     } else {
         response
+    }
+}
+
+#[derive(Debug)]
+pub struct ClientIp(axum_client_ip::ClientIp);
+
+impl OperationInput for ClientIp {}
+
+impl<S> FromRequestParts<S> for ClientIp
+where
+    S: Sync,
+{
+    type Rejection = axum_client_ip::Rejection;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        Ok(Self(
+            axum_client_ip::ClientIp::from_request_parts(parts, state).await?,
+        ))
     }
 }
