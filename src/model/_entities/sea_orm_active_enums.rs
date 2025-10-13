@@ -44,20 +44,28 @@ pub enum ProductEdition {
 )]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "template_topic")]
 pub enum TemplateTopic {
+    /// # 招投标
     #[sea_orm(string_value = "BIDDING")]
     Bidding,
+    /// # 电商
     #[sea_orm(string_value = "E_COMMERCE")]
     ECommerce,
+    /// # 本地生活
     #[sea_orm(string_value = "LOCAL_LIFE")]
     LocalLife,
+    /// # 媒体
     #[sea_orm(string_value = "MEDIA")]
     Media,
-    #[sea_orm(string_value = "OTHER")]
-    Other,
+    /// # 科研教育
     #[sea_orm(string_value = "RESEARCH_EDUCATION")]
     ResearchEducation,
+    /// # 搜索引擎
     #[sea_orm(string_value = "SEARCH_ENGINE")]
     SearchEngine,
+    /// # 社交网络
     #[sea_orm(string_value = "SOCIAL_NETWORK")]
     SocialNetwork,
+    /// # 其他
+    #[sea_orm(string_value = "OTHER")]
+    Other,
 }

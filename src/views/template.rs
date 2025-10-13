@@ -9,15 +9,19 @@ use serde_with::serde_as;
 use serde_with::NoneAsEmptyString;
 use validator::Validate;
 
+/// # 模板查询
 #[serde_as]
 #[derive(Deserialize, Validate, JsonSchema)]
 pub struct TemplateQuery {
+    /// # 模板名称
     #[validate(length(max = 30, message = "查询名称过长"))]
     pub name: Option<String>,
+    /// # 主题
     #[serde_as(as = "NoneAsEmptyString")]
     #[serde(default)]
     #[schemars(with = "Option<TemplateTopic>")]
     pub topic: Option<TemplateTopic>,
+    /// # 产品授权级别
     #[serde_as(as = "NoneAsEmptyString")]
     #[serde(default)]
     #[schemars(with = "Option<ProductEdition>")]
@@ -40,6 +44,7 @@ impl IntoCondition for TemplateQuery {
     }
 }
 
+/// # 预制模板列表
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct ListTemplateResp {
     id: i64,

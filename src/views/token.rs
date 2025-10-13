@@ -2,6 +2,7 @@ use crate::model::sea_orm_active_enums::ProductEdition;
 use schemars::JsonSchema;
 use serde::Serialize;
 
+/// # 用户Token
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct UserToken {
     pub(crate) id: i64,
