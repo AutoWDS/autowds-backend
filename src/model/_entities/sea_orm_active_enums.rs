@@ -43,7 +43,6 @@ pub enum ProductEdition {
     JsonSchema,
     Display,
 )]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "template_topic")]
 pub enum TemplateTopic {
     /// # 招投标
