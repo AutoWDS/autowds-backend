@@ -13,7 +13,7 @@ use spring_web::{
     extractor::Component,
 };
 
-/// 登陆
+/// 邮箱密码登录
 /// @tag token
 #[post_api("/token")]
 async fn login(
