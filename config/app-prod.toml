@@ -1,2 +1,5 @@
+[web.middlewares]
+static = { enable = true, uri = "/", path = "static" }
+
 [opentelemetry]
 enable = true
