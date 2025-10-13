@@ -1,4 +1,18 @@
-# rust builder
+############### frontend builder
+FROM node:20 as frontend_builder
+
+WORKDIR /build
+
+COPY frontend/package.json frontend/package-lock.json ./
+
+# cache node_modules dependencies
+RUN npm install
+
+COPY frontend /build/
+
+RUN npm run build
+
+############### rust builder
 FROM rust:latest AS builder
 
 WORKDIR /build
@@ -12,7 +26,7 @@ COPY . .
 
 RUN cargo build --release
 
-# runner container
+############### runner container
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y libssl-dev ca-certificates && update-ca-certificates && apt-get clean
@@ -21,7 +35,9 @@ ENV RUST_LOG=info
 
 WORKDIR /runner
 
-COPY --from=builder /build/target/release/autowds-backend ./app
+COPY --from=frontend_builder /build/dist/ ./static
+
+COPY --from=builder /build/target/release/autowds-backend ./autowds-backend
 
 COPY ./config ./config
 
@@ -29,4 +45,4 @@ COPY ./templates ./templates
 
 EXPOSE 8080
 
-ENTRYPOINT ["/runner/app"]
+ENTRYPOINT ["/runner/autowds-backend"]
