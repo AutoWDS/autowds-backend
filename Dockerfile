@@ -35,7 +35,7 @@ ENV RUST_LOG=info
 
 WORKDIR /runner
 
-COPY --from=frontend_builder /build/dist/ ./static
+COPY --from=frontend_builder /build/build/ ./static
 
 COPY --from=builder /build/target/release/autowds-backend ./autowds-backend
 
