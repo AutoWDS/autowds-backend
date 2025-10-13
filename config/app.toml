@@ -1,6 +1,9 @@
 [web]
 graceful = true
 
+[web.middlewares]
+static = { enable = true, uri = "/", path = "frontend/build" }
+
 [web.openapi]
 doc_prefix = "/docs"
 info = { title = "autowds api document", version = "0.0.1" }
