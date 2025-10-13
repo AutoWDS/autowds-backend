@@ -19,12 +19,15 @@ use spring_web::{
 
 pub fn router() -> Router {
     let env = Env::init();
-    spring_web::handler::auto_router()
-        .layer(middleware::from_fn(problem_middleware))
-        .layer(match env {
-            Env::Dev => ClientIpSource::ConnectInfo.into_extension(),
-            _ => ClientIpSource::RightmostXForwardedFor.into_extension(),
-        })
+    Router::new().nest(
+        "/api",
+        spring_web::handler::auto_router()
+            .layer(middleware::from_fn(problem_middleware))
+            .layer(match env {
+                Env::Dev => ClientIpSource::ConnectInfo.into_extension(),
+                _ => ClientIpSource::RightmostXForwardedFor.into_extension(),
+            }),
+    )
 }
 
 async fn problem_middleware(request: Request, next: Next) -> Response {
