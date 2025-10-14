@@ -1,12 +1,29 @@
 pub use super::_entities::scraper_task::*;
 
 use anyhow::Context;
+use schemars::JsonSchema;
 use sea_orm::{
     sqlx::types::chrono::Local, ActiveModelBehavior, ConnectionTrait, DbConn, DbErr, EntityTrait,
-    Set,
+    FromJsonQueryResult, Set,
 };
+use serde::{Deserialize, Serialize};
 use spring::async_trait;
 use spring_web::error::{KnownWebError, WebError};
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ScheduleType {
+    Fast,
+    Browser,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub struct ScheduleData {
+    pub cron: String,
+    pub proxy_id: i32,
+    pub ty: ScheduleType,
+}
 
 #[async_trait]
 impl ActiveModelBehavior for ActiveModel {

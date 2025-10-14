@@ -1,5 +1,5 @@
 use crate::model::prelude::ScraperTask;
-use crate::model::scraper_task;
+use crate::model::scraper_task::{self, ScheduleData};
 use crate::utils::jwt::Claims;
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
@@ -206,12 +206,35 @@ async fn update_task_cron() -> Result<impl IntoResponse> {
     Ok("")
 }
 
-// #[get_api("/task/{id}/schedule")]
-async fn get_task_schedule_info() -> Result<impl IntoResponse> {
-    Ok("")
+/// # 获取指定任务的调度配置
+#[get_api("/task/{id}/schedule")]
+async fn get_task_schedule_info(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+) -> Result<Json<Option<ScheduleData>>> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+    Ok(Json(task.data))
 }
 
-// #[patch_api("/task/{id}/schedule")]
-async fn update_task_schedule_info() -> Result<impl IntoResponse> {
-    Ok("")
+/// # 修改指定任务的调度配置
+#[patch_api("/task/{id}/schedule")]
+async fn update_task_schedule_info(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(data): Json<ScheduleData>,
+) -> Result<Json<i64>> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    scraper_task::ActiveModel {
+        id: Set(task.id),
+        data: Set(Some(data)),
+        ..Default::default()
+    }
+    .save(&db)
+    .await
+    .context("save scraper task failed")?;
+
+    Ok(Json(task.id))
 }

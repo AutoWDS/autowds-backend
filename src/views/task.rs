@@ -3,6 +3,8 @@ use serde::Deserialize;
 use serde_json::Value;
 use validator::Validate;
 
+use crate::model::scraper_task::ScheduleData;
+
 /// # 任务查询请求
 #[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperTaskQuery {
@@ -20,7 +22,7 @@ pub struct ScraperTaskReq {
 
     /// # 数据
     #[serde(default)]
-    pub data: Value,
+    pub data: Option<ScheduleData>,
 
     /// # 任务规则定义
     #[serde(default)]
@@ -31,7 +33,7 @@ pub struct ScraperTaskReq {
 #[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperUpdateTaskReq {
     #[serde(default)]
-    pub data: Value,
+    pub data: Option<ScheduleData>,
 
     #[serde(default)]
     pub rule: Value,
