@@ -18,10 +18,11 @@ pub enum ScheduleType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema)]
-#[serde(rename_all = "lowercase")]
 pub struct ScheduleData {
     pub cron: String,
+    #[serde(rename = "proxyId")]
     pub proxy_id: i32,
+    #[serde(rename = "type")]
     pub ty: ScheduleType,
 }
 
