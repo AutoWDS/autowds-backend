@@ -59,7 +59,7 @@ create table scraper_task (
     user_id bigint not null,
     deleted boolean not null,
     name varchar(60) not null,
-    data jsonb not null,
-    rule jsonb not null
+    rule jsonb not null,
+    data jsonb default null
 );
 create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);
