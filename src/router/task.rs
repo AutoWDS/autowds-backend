@@ -207,6 +207,7 @@ async fn update_task_cron() -> Result<impl IntoResponse> {
 }
 
 /// # 获取指定任务的调度配置
+/// @tag task
 #[get_api("/task/{id}/schedule")]
 async fn get_task_schedule_info(
     claims: Claims,
@@ -218,6 +219,7 @@ async fn get_task_schedule_info(
 }
 
 /// # 修改指定任务的调度配置
+/// @tag task
 #[patch_api("/task/{id}/schedule")]
 async fn update_task_schedule_info(
     claims: Claims,
