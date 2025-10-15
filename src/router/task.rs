@@ -13,7 +13,7 @@ use spring_web::error::{KnownWebError, Result};
 use spring_web::extractor::{Component, Path, Query};
 use spring_web::{delete_api, get_api, patch_api, post_api, put_api};
 
-/// 查询当前用户的所有任务
+/// # 查询当前用户的所有任务
 /// @tag task
 #[get_api("/task")]
 async fn query_task(
@@ -35,7 +35,7 @@ async fn query_task(
     Ok(Json(page))
 }
 
-/// 新增任务
+/// # 新增任务
 /// @tag task
 #[post_api("/task")]
 async fn add_task(
@@ -56,7 +56,7 @@ async fn add_task(
     Ok(Json(task))
 }
 
-/// 批量新增任务
+/// # 批量新增任务
 /// @tag task
 #[post_api("/task/batch")]
 async fn add_batch_task(
@@ -83,7 +83,7 @@ async fn add_batch_task(
     Ok(Json(r.last_insert_id))
 }
 
-/// 获取任务详情
+/// # 获取任务详情
 /// @tag task
 #[get_api("/task/{id}")]
 async fn get_task(
@@ -96,7 +96,7 @@ async fn get_task(
     Ok(Json(task))
 }
 
-/// 删除任务
+/// # 删除任务
 /// @tag task
 #[delete_api("/task/{id}")]
 async fn delete_task(
@@ -118,7 +118,7 @@ async fn delete_task(
     Ok(Json(task.id))
 }
 
-/// 更新任务
+/// # 更新任务
 /// @tag task
 #[put_api("/task/{id}")]
 async fn update_task(
@@ -142,7 +142,7 @@ async fn update_task(
     Ok(Json(task.id))
 }
 
-/// 获取任务规则
+/// # 获取任务规则
 /// @tag task
 #[get_api("/task/{id}/rule")]
 async fn get_task_rule(
@@ -155,7 +155,7 @@ async fn get_task_rule(
     Ok(Json(task.rule))
 }
 
-/// 更新任务规则
+/// # 更新任务规则
 /// @tag task
 #[patch_api("/task/{id}/rule")]
 async fn update_task_rule(
@@ -178,7 +178,7 @@ async fn update_task_rule(
     Ok(Json(task.id))
 }
 
-/// 更新任务名
+/// # 更新任务名
 /// @tag task
 #[patch_api("/task/{id}/name")]
 async fn update_task_name(

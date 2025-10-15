@@ -65,7 +65,7 @@ where
     }
 }
 
-/// define the OpenAPI doc for Claims
+/// # define the OpenAPI doc for Claims
 impl OperationInput for Claims {
     fn operation_input(_ctx: &mut GenContext, operation: &mut Operation) {
         let aide_schema = SchemaObject {
@@ -133,7 +133,7 @@ where
     }
 }
 
-/// define the OpenAPI doc for Claims
+/// # define the OpenAPI doc for Claims
 impl OperationInput for OptionalClaims {
     fn operation_input(_ctx: &mut GenContext, operation: &mut Operation) {
         let aide_schema = SchemaObject {
@@ -163,7 +163,7 @@ impl OperationInput for OptionalClaims {
     }
 }
 
-/// JWT encode
+/// # JWT encode
 pub fn encode(claims: Claims) -> Result<String> {
     let header = Header::new(Algorithm::RS256);
 
@@ -173,7 +173,7 @@ pub fn encode(claims: Claims) -> Result<String> {
     Ok(token)
 }
 
-/// JWT decode
+/// # JWT decode
 pub fn decode(token: &str) -> Result<Claims> {
     let validation = Validation::new(Algorithm::RS256);
     let token_data =

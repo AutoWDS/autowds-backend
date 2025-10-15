@@ -23,7 +23,7 @@ use spring_web::{
 };
 use spring_web::{extractor::Config, get_api, patch_api, post_api};
 
-/// 注册
+/// # 注册
 /// @tag user
 #[post_api("/user")]
 async fn register(
@@ -68,7 +68,7 @@ async fn register(
     Ok(Json(user.into()))
 }
 
-/// 获取当前用户信息
+/// # 获取当前用户信息
 /// @tag user
 #[get_api("/user")]
 async fn current_user(claims: Claims, Component(db): Component<DbConn>) -> Result<Json<UserResp>> {
@@ -85,7 +85,7 @@ async fn current_user(claims: Claims, Component(db): Component<DbConn>) -> Resul
     Ok(Json(UserResp::from(user)))
 }
 
-/// 注册验证码
+/// # 注册验证码
 /// @tag user
 #[post_api("/user/register-validate-code")]
 async fn register_validate_code(
@@ -107,7 +107,7 @@ async fn register_validate_code(
     Ok(Json(success))
 }
 
-/// 重置验证码
+/// # 重置验证码
 /// @tag user
 #[post_api("/user/reset-validate-code")]
 async fn reset_validate_code(
@@ -129,7 +129,7 @@ async fn reset_validate_code(
     Ok(Json(success))
 }
 
-/// 重置密码
+/// # 重置密码
 /// @tag user
 #[post_api("/user/passwd")]
 async fn reset_password(
@@ -168,7 +168,7 @@ async fn reset_password(
     Ok(jwt::encode(claims)?)
 }
 
-/// 修改用户名
+/// # 修改用户名
 /// @tag user
 #[patch_api("/user/name")]
 async fn set_name(

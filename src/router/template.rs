@@ -20,7 +20,7 @@ use spring_web::{
 };
 use std::collections::HashSet;
 
-/// 查询任务模板
+/// # 查询任务模板
 /// @tag template
 #[get_api("/template")]
 async fn query(
@@ -57,7 +57,7 @@ async fn query(
     })))
 }
 
-/// 我收藏的任务模板
+/// # 我收藏的任务模板
 /// @tag template
 #[get_api("/template/favorite")]
 async fn my_favorite(
@@ -84,7 +84,7 @@ async fn my_favorite(
     Ok(Json(Page::new(templates, &pagination, favs.total_elements)))
 }
 
-/// 收藏任务模板
+/// # 收藏任务模板
 /// @tag template
 #[post_api("/{template_id}/favorite")]
 async fn add_favorite(
@@ -109,7 +109,7 @@ async fn add_favorite(
     Ok(Json(fav))
 }
 
-/// 取消收藏任务模板
+/// # 取消收藏任务模板
 /// @tag template
 #[delete_api("/{template_id}/favorite")]
 async fn delete_favorite(
