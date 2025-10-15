@@ -3152,9 +3152,9 @@ dependencies = [
 
 [[package]]
 name = "spring-macros"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f78128f37da0bf1c2ab8d3abc76fb620916d33877e407fec5c5eb6f4fac75bc4"
+checksum = "6a412be8cfbbdfc9a7e861b92aa443064c04cbc133196ede4193cf118583629f"
 dependencies = [
  "proc-macro2",
  "quote",
