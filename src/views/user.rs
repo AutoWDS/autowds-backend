@@ -8,7 +8,12 @@ use validator::Validate;
 /// # 认证请求
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct AuthenticationToken {
+    #[validate(
+        email(message = "邮箱格式不正确"),
+        length(max = 60, message = "邮箱过长")
+    )]
     pub email: String,
+    #[validate(length(max = 32, message = "密码过长"))]
     pub passwd: String,
 }
 
