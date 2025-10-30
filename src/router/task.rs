@@ -6,11 +6,13 @@ use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
 use serde_json::Value;
+use spring_job::job::Job;
+use spring_job::JobScheduler;
 use spring_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use spring_web::axum::response::IntoResponse;
 use spring_web::axum::Json;
 use spring_web::error::{KnownWebError, Result};
-use spring_web::extractor::{Component, Path, Query};
+use spring_web::extractor::{AppRef, Component, Path, Query};
 use spring_web::{delete_api, get_api, patch_api, post_api, put_api};
 
 /// # 查询当前用户的所有任务
@@ -225,10 +227,13 @@ async fn update_task_schedule_info(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
+    Component(sched): Component<JobScheduler>,
+    AppRef(app): AppRef,
     Json(data): Json<ScheduleData>,
 ) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
+    let cron = data.cron.clone();
     scraper_task::ActiveModel {
         id: Set(task.id),
         data: Set(Some(data)),
@@ -237,6 +242,11 @@ async fn update_task_schedule_info(
     .save(&db)
     .await
     .context("save scraper task failed")?;
+
+    let job = Job::cron_with_data(&cron, task.id)
+        .run(crate::task::dispatch_task)
+        .build(app);
+    sched.add(job).await.context("添加调度失败")?;
 
     Ok(Json(task.id))
 }
