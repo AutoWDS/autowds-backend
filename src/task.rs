@@ -1,3 +1,8 @@
+use apalis_board_api::{
+    framework::{ApiBuilder, RegisterRoute as _},
+    sse::{TracingBroadcaster, TracingSubscriber},
+    ui::ServeUI,
+};
 use spring::{
     app::AppBuilder,
     plugin::{ComponentRegistry, MutableComponentRegistry as _},
@@ -7,12 +12,26 @@ use spring_apalis::apalis::prelude::*;
 use spring_apalis::apalis_redis::RedisStorage;
 use spring_job::extractor::{Component, Data};
 use spring_redis::Redis;
+use spring_web::{
+    axum::{Extension, Router},
+    WebConfigurator,
+};
 
 pub type TaskPublisher = RedisStorage<i64>;
 
 pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {
+    let broadcaster = TracingBroadcaster::create();
+    let line_subscriber = TracingSubscriber::new(&broadcaster);
+    app.add_layer(line_subscriber.layer());
     let redis = app.get_expect_component::<Redis>();
-    app.add_component(TaskPublisher::new(redis));
+    let storage = TaskPublisher::new(redis);
+    app.add_component(storage.clone());
+    let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
+    let router = Router::new()
+        .nest("/apalis", apalis_api)
+        .fallback_service(ServeUI::new())
+        .layer(Extension(broadcaster.clone()));
+    app.add_router(router.into());
     monitor
 }
 

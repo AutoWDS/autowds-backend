@@ -39,3 +39,5 @@ tracing = "0.1"
 rand = "0.9"
 askama = "0.12"
 itertools = "0.14"
+apalis-board-api = { version = "1.0.0-alpha.1", features = ["axum"] }
+apalis-core = { version = "1.0.0-alpha.4" }

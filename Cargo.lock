@@ -158,7 +158,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ea07a005e05b1672920818822ebace7a59bdf4b3176390d7be661e2b4027c42"
 dependencies = [
- "apalis-core",
+ "apalis-core 0.7.3",
  "futures",
  "pin-project-lite",
  "serde",
@@ -166,6 +166,33 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-futures",
+]
+
+[[package]]
+name = "apalis-board-api"
+version = "1.0.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d950ef7b4caf373586e13759245b915c9fcde2f83b668290431a4b9dcb21187a"
+dependencies = [
+ "apalis-board-types",
+ "apalis-core 1.0.0-alpha.7",
+ "axum",
+ "futures",
+ "include_dir",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "apalis-board-types"
+version = "1.0.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77caa8ed4af6253d39210949997d4f8b946e18c462dba20d9fa80879f4abb712"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -185,12 +212,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "apalis-core"
+version = "1.0.0-alpha.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c89aa1201b676ea5b481685cf8af2034b96aac6c01dbc64bd6d36237b220d39"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "pin-project",
+ "serde",
+ "thiserror 2.0.17",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "apalis-redis"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fda85a8351d7fd9214ce6e02242c49bf2b122ca5c9f7651d9bf3a41e3f6c34ac"
 dependencies = [
- "apalis-core",
+ "apalis-core 0.7.3",
  "chrono",
  "futures",
  "log",
@@ -337,6 +381,8 @@ name = "autowds-backend"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "apalis-board-api",
+ "apalis-core 1.0.0-alpha.7",
  "askama",
  "axum-client-ip",
  "axum-extra",
@@ -1730,6 +1776,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "include_dir"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "923d117408f1e49d914f1a379a309cffe4f18c05cf4e3d12e613a15fc81bd0dd"
+dependencies = [
+ "include_dir_macros",
+]
+
+[[package]]
+name = "include_dir_macros"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cab85a7ed0bd5f0e76d93846e0147172bed2e2d3f859bcc33a8d9699cad1a75"
+dependencies = [
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2338,6 +2403,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pin-project"
+version = "1.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "677f1add503faace112b9f1373e43e9e054bfdd22ff1a63c1bc485eaec6a6a8a"
+dependencies = [
+ "pin-project-internal",
+]
+
+[[package]]
+name = "pin-project-internal"
+version = "1.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e918e4ff8c4549eb882f14b3a4bc8c8bc93de829416eacf579f1207a8fbf861"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.108",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2534,7 +2619,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools",
  "log",
  "multimap",
