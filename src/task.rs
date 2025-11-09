@@ -26,12 +26,12 @@ pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {
     let redis = app.get_expect_component::<Redis>();
     let storage = TaskPublisher::new(redis);
     app.add_component(storage.clone());
-    let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
-    let router = Router::new()
-        .nest("/apalis", apalis_api)
-        .fallback_service(ServeUI::new())
-        .layer(Extension(broadcaster.clone()));
-    app.add_router(router.into());
+    // let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
+    // let router = Router::new()
+    //     .nest("/apalis", apalis_api)
+    //     .fallback_service(ServeUI::new())
+    //     .layer(Extension(broadcaster.clone()));
+    // app.add_router(router.into());
     monitor
 }
 
