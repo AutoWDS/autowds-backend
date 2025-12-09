@@ -4,7 +4,9 @@ use crate::utils::jwt::Claims;
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
 use itertools::Itertools;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    sqlx::types::chrono::Local, ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set,
+};
 use serde_json::Value;
 use spring_job::job::Job;
 use spring_job::JobScheduler;
@@ -69,12 +71,17 @@ async fn add_batch_task(
     if batch.len() > 10 {
         Err(KnownWebError::bad_request("任务过多无法保存"))?;
     }
+    let now = Local::now().naive_local();
     let batch = batch
         .into_iter()
         .map(|m| scraper_task::ActiveModel {
             user_id: Set(claims.uid),
             name: Set(m.name),
+            data: Set(m.data),
             rule: Set(m.rule),
+            created: Set(now),
+            modified: Set(now),
+            deleted: Set(false),
             ..Default::default()
         })
         .collect_vec();
