@@ -1,5 +1,6 @@
 [web]
 graceful = true
+connect_info = true
 
 [web.middlewares]
 static = { enable = true, uri = "/", path = "frontend/build" }

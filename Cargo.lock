@@ -170,12 +170,12 @@ dependencies = [
 
 [[package]]
 name = "apalis-board-api"
-version = "1.0.0-alpha.2"
+version = "1.0.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "695b434380078a74d1c4fe424c92cdc97dd6825a1e77c91762ac801d40f609ae"
+checksum = "c9b1d2a72dfe4076e449bf7d8d7e26197b14f5344dc5b1b6818bcd1f51f4c4e8"
 dependencies = [
  "apalis-board-types",
- "apalis-core 1.0.0-alpha.9",
+ "apalis-core 1.0.0-beta.2",
  "axum",
  "futures",
  "include_dir",
@@ -188,9 +188,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-board-types"
-version = "1.0.0-alpha.2"
+version = "1.0.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7f38da5b89cc2a731a5a51d3216a689459ee54f0b0a37bd21cb255b8076bb74"
+checksum = "78c0bb3efe9da9768890ee2a2b6b7cea7e5bbf6bed55f86bec05f51a813cb077"
 dependencies = [
  "serde",
 ]
@@ -213,19 +213,21 @@ dependencies = [
 
 [[package]]
 name = "apalis-core"
-version = "1.0.0-alpha.9"
+version = "1.0.0-beta.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d3961e8866ed0be3943d0998de96f4a14c50080aa0f4e57cde23e8c56e8e16c"
+checksum = "49039d4eb476cc05e196210153dbb34be180de9a0ef8b7a666fde0f80c5c357d"
 dependencies = [
  "futures-channel",
  "futures-core",
  "futures-sink",
+ "futures-timer",
  "futures-util",
  "pin-project",
  "serde",
  "thiserror 2.0.17",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -382,7 +384,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "apalis-board-api",
- "apalis-core 1.0.0-alpha.9",
+ "apalis-core 1.0.0-beta.2",
  "askama",
  "axum-client-ip",
  "axum-extra 0.10.3",
@@ -393,7 +395,7 @@ dependencies = [
  "pem",
  "problemdetails",
  "rand 0.9.2",
- "schemars 0.9.0",
+ "schemars 1.1.0",
  "sea-orm",
  "serde",
  "serde_json",
@@ -3066,10 +3068,8 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd191f9397d57d581cddd31014772520aa448f65ef991055d7f61582c65165f"
 dependencies = [
- "chrono",
  "dyn-clone",
  "ref-cast",
- "schemars_derive 0.9.0",
  "serde",
  "serde_json",
 ]
@@ -3080,24 +3080,13 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9558e172d4e8533736ba97870c4b2cd63f84b382a3d6eb063da41b91cce17289"
 dependencies = [
+ "chrono",
  "dyn-clone",
  "indexmap 2.12.0",
  "ref-cast",
- "schemars_derive 1.1.0",
+ "schemars_derive",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "schemars_derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5016d94c77c6d32f0b8e08b781f7dc8a90c2007d4e77472cc2807bc10a8438fe"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals",
- "syn 2.0.109",
 ]
 
 [[package]]
