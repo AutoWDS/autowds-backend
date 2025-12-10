@@ -1,3 +1,4 @@
+mod statistics;
 mod task;
 mod template;
 mod token;

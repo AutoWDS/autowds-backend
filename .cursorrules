@@ -1,0 +1,185 @@
+# AutoWDS Backend Project Rules
+
+## 项目概述
+这是一个全栈项目，包含：
+- **后端**: Rust (Spring 框架 + Axum + Sea-ORM)
+- **前端**: React 18 + TypeScript + Ant Design
+- **数据库**: PostgreSQL
+- **缓存**: Redis
+- **任务队列**: Apalis
+
+## 后端 (Rust) 规范
+
+### 代码风格
+- 使用 Rust 2021 edition
+- 遵循 Rust 官方代码风格（rustfmt）
+- 使用 `snake_case` 命名函数和变量
+- 使用 `PascalCase` 命名类型和结构体
+- 使用 `SCREAMING_SNAKE_CASE` 命名常量
+
+### 项目结构
+- `src/main.rs`: 应用入口，配置插件和路由
+- `src/router/`: 路由定义，使用 `spring_web::handler::auto_router()` 自动路由
+- `src/views/`: 请求/响应数据结构，使用 `serde` 和 `schemars` 进行序列化和 OpenAPI 文档生成
+- `src/model/`: 数据库模型，使用 Sea-ORM
+- `src/utils/`: 工具函数（JWT、邮件、验证码等）
+- `src/config/`: 配置文件
+
+### API 开发规范
+- 使用 `#[post_api]`, `#[get_api]`, `#[patch_api]` 等宏定义路由
+- 所有 API 路径以 `/api` 为前缀（在 `router/mod.rs` 中统一配置）
+- 使用 `@tag` 注释为 OpenAPI 文档分组
+- 请求体使用 `Json<T>` 提取器，其中 `T` 实现 `Deserialize` 和 `Validate`
+- 响应使用 `Result<Json<T>>`，其中 `T` 实现 `Serialize` 和 `JsonSchema`
+- 错误处理使用 `KnownWebError` 或 `anyhow::Context` 提供上下文
+
+### 数据验证
+- 使用 `validator` crate 进行请求验证
+- 在 `views/` 中的结构体上使用 `#[derive(Validate)]` 和验证属性
+- 验证消息使用中文（如：`message = "邮箱格式不正确"`）
+
+### 数据库操作
+- 使用 Sea-ORM 进行数据库操作
+- 使用 `Component<DbConn>` 注入数据库连接
+- 使用 `ActiveModel` 进行插入和更新操作
+- 使用 `QueryFilter` 进行查询过滤
+- 错误处理使用 `anyhow::Context` 提供上下文信息
+
+### 依赖注入
+- 使用 Spring 框架的 `Component<T>` 进行依赖注入
+- 常用组件：`DbConn`, `Redis`, `Mailer`, `Config<T>`
+- 使用 `ClientIp` 提取客户端 IP 地址
+
+### 错误处理
+- 使用 `anyhow::Result` 和 `anyhow::Context` 进行错误处理
+- 使用 `KnownWebError` 返回标准 HTTP 错误
+- 使用 `problemdetails` 生成符合 RFC 7807 的错误响应
+
+### 注释和文档
+- 使用 `///` 为公共 API 编写文档注释
+- 使用 `#` 开头的注释作为 OpenAPI 文档标题
+- 结构体字段使用 `///` 注释作为 OpenAPI 字段描述
+
+## 前端 (React/TypeScript) 规范
+
+### 代码风格
+- 使用 TypeScript strict 模式
+- 使用函数式组件和 Hooks
+- 使用 ES6+ 语法
+- 组件文件使用 `PascalCase` 命名（如 `Home.tsx`）
+- 工具函数和类型文件使用 `camelCase` 命名（如 `ajax.ts`）
+
+### 项目结构
+- `src/App.tsx`: 主应用组件，包含路由和布局
+- `src/page/`: 页面组件
+- `src/components/`: 可复用组件
+- `src/api/`: API 调用函数，使用 `utils/ajax.ts` 封装
+- `src/types/`: TypeScript 类型定义
+- `src/utils/`: 工具函数
+- `src/locales/`: 国际化资源文件（支持中文和英文）
+- `src/i18n/`: 国际化配置
+
+### TypeScript 配置
+- `baseUrl` 设置为 `"src"`，可以使用绝对路径导入（如 `import ajax from "utils/ajax"`）
+- 使用严格模式：`strict: true`
+- JSX 使用 `react-jsx` 模式
+
+### 组件开发规范
+- 优先使用函数式组件
+- 使用 `export default` 导出组件
+- Props 使用 TypeScript 接口定义
+- 使用 Ant Design 组件库进行 UI 开发
+- 样式文件与组件文件同名（如 `Home.tsx` 和 `Home.css`）
+
+### API 调用规范
+- 使用 `utils/ajax.ts` 封装的 `ajax()` 函数
+- API 函数放在 `api/` 目录下，按功能模块组织
+- 使用链式调用：`ajax("/path").payload(data).post()`
+- 返回类型使用 `Promise<T>` 明确指定
+
+### 路由规范
+- 使用 React Router v6
+- 路由定义在 `App.tsx` 中
+- 使用 `Link` 组件进行导航
+- 使用 `useNavigate` 进行编程式导航
+
+### 国际化
+- 使用 `i18next` 和 `react-i18next`
+- 翻译键定义在 `locales/en.json` 和 `locales/zh.json`
+- 使用 `i18n()` 函数获取翻译文本
+- 所有用户可见文本都应该国际化
+
+### 状态管理
+- 使用 React Hooks (`useState`, `useEffect`) 进行本地状态管理
+- 用户认证信息存储在 `localStorage`（通过 `api/user.ts` 中的函数管理）
+
+### 表单处理
+- 使用 Ant Design 的 `Form` 组件
+- 使用 `Form.useForm()` 创建表单实例
+- 验证规则使用 `validateRule.ts` 中定义的规则函数
+- 表单验证触发时机：`validateTrigger="onBlur"`
+
+### 样式规范
+- 使用 CSS 模块或独立的 CSS 文件
+- 优先使用 Ant Design 的主题和样式
+- 使用内联样式时，使用对象形式（如 `style={{ margin: 16 }}`）
+
+## 通用规范
+
+### Git 提交
+- 提交信息使用中文或英文，清晰描述变更内容
+- 遵循约定式提交格式（如：`feat: 添加用户注册功能`）
+
+### 代码审查
+- 确保代码通过 linter 检查
+- Rust 代码使用 `cargo fmt` 和 `cargo clippy` 检查
+- TypeScript 代码遵循 ESLint 规则
+
+### 测试
+- 为新功能添加适当的测试
+- 前端测试使用 `@testing-library/react`
+- 后端测试使用 Rust 标准测试框架
+
+### 性能优化
+- 避免不必要的重新渲染
+- 使用 `React.memo` 优化组件性能
+- 数据库查询使用适当的索引
+- 使用 Redis 缓存频繁访问的数据
+
+### 安全性
+- 所有用户输入必须验证
+- 使用 JWT 进行身份认证
+- 敏感信息不要硬编码在代码中
+- 使用环境变量管理配置
+
+### 文档
+- 为新 API 添加 OpenAPI 文档注释
+- 复杂逻辑添加代码注释
+- 更新 README 文件记录重要变更
+
+## 开发工作流
+
+1. **后端开发**:
+   - 在 `src/views/` 中定义请求/响应结构
+   - 在 `src/router/` 中实现路由处理函数
+   - 在 `src/model/` 中定义数据库模型（如需要）
+   - 使用 `cargo run` 启动开发服务器
+
+2. **前端开发**:
+   - 在 `src/api/` 中定义 API 调用函数
+   - 在 `src/page/` 或 `src/components/` 中创建组件
+   - 在 `src/locales/` 中添加翻译文本
+   - 使用 `npm start` 启动开发服务器
+
+3. **数据库变更**:
+   - 更新 `sql/ddl.sql` 中的 SQL 定义
+   - 使用 Sea-ORM 的迁移工具（如适用）
+
+## 注意事项
+
+- 后端 API 路径统一以 `/api` 开头
+- 前端使用绝对路径导入（基于 `src` 目录）
+- 所有用户可见文本都应该国际化
+- 保持代码风格一致性
+- 遵循单一职责原则，保持函数和组件简洁
+
