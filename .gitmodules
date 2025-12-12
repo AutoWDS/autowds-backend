@@ -1,3 +1,6 @@
 [submodule "frontend"]
 	path = frontend
 	url = git@github.com:AutoWDS/autowds-cloud.git
+[submodule "site"]
+	path = site
+	url = git@github.com:AutoWDS/autowds-site.git
