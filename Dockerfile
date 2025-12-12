@@ -12,6 +12,20 @@ COPY frontend /build/
 
 RUN npm run build
 
+############### site builder
+FROM node:20 as site_builder
+
+WORKDIR /build
+
+COPY site/package.json site/package-lock.json ./
+
+# cache node_modules dependencies
+RUN npm install
+
+COPY site /build/
+
+RUN npm run build
+
 ############### rust builder
 FROM rust:latest AS builder
 
@@ -40,7 +54,8 @@ ENV RUST_LOG=info
 
 WORKDIR /runner
 
-COPY --from=frontend_builder /build/build/ ./static
+COPY --from=site_builder /build/out/ ./static
+COPY --from=frontend_builder /build/build/ ./static/cloud
 
 COPY --from=builder /build/target/release/autowds-backend ./autowds-backend
 
