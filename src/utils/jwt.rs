@@ -30,6 +30,7 @@ lazy_static! {
 pub struct Claims {
     pub uid: i64,
     pub email: String,
+    pub is_admin: bool,
     exp: u64,
 }
 
@@ -37,7 +38,8 @@ impl Claims {
     pub fn new(user: account_user::Model) -> Self {
         Self {
             uid: user.id,
-            email: user.email,
+            email: user.email.clone(),
+            is_admin: user.id <= 1,
             exp: jsonwebtoken::get_current_timestamp() + 360 * 24 * 60 * 60 * 1000,
         }
     }
@@ -162,6 +164,32 @@ impl OperationInput for OptionalClaims {
             }));
     }
 }
+
+/// # Admin Claims - 管理员权限验证
+pub struct AdminClaims(pub Claims);
+
+impl<S> FromRequestParts<S> for AdminClaims
+where
+    S: Send + Sync,
+{
+    type Rejection = WebError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> std::result::Result<Self, Self::Rejection> {
+        let claims = Claims::from_request_parts(parts, state).await?;
+        
+        if !claims.is_admin {
+            return Err(KnownWebError::forbidden("需要管理员权限").into());
+        }
+        
+        Ok(Self(claims))
+    }
+}
+
+/// # define the OpenAPI doc for AdminClaims
+/// ### 管理员接口不暴露openapi文档
 
 /// # JWT encode
 pub fn encode(claims: Claims) -> Result<String> {

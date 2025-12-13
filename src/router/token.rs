@@ -35,6 +35,7 @@ async fn login(
     let token = jwt::encode(claims)?;
     Ok(Json(UserToken {
         id: user.id,
+        is_admin: user.id <= 1,
         name: user.name,
         email: user.email,
         edition: user.edition,

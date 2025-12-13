@@ -1,3 +1,4 @@
+mod admin;
 mod statistics;
 mod task;
 mod template;

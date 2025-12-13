@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod statistics;
 pub mod task;
 pub mod template;
