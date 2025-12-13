@@ -31,7 +31,7 @@ FROM node:20 as backend_builder
 
 WORKDIR /build
 
-COPY site/package.json site/package-lock.json ./
+COPY backend/package.json backend/package-lock.json ./
 
 # cache node_modules dependencies
 RUN npm install
