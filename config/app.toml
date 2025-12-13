@@ -6,7 +6,7 @@ connect_info = true
 static = { enable = true, uri = "/", path = "frontend/build" }
 
 [web.openapi]
-doc_prefix = "/docs"
+doc_prefix = "/openapi/docs"
 info = { title = "autowds api document", version = "0.0.1" }
 
 [mail]
