@@ -70,7 +70,7 @@ WORKDIR /runner
 
 COPY --from=site_builder /build/out/ ./static
 COPY --from=frontend_builder /build/build/ ./static/cloud
-COPY --from=backend_builder /build/dist/ ./static/backend
+COPY --from=backend_builder /build/dist/ ./static/admin
 
 COPY --from=builder /build/target/release/autowds-backend ./autowds-backend
 
