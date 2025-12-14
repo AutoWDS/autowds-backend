@@ -6,7 +6,8 @@ use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq}
 use anyhow::Context;
 use itertools::Itertools;
 use sea_orm::{
-    sqlx::types::chrono::Local, ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, PaginatorTrait, QueryFilter, Set,
+    sqlx::types::chrono::Local, ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, PaginatorTrait,
+    QueryFilter, Set,
 };
 use serde_json::Value;
 use spring_job::job::Job;
@@ -19,7 +20,11 @@ use spring_web::extractor::{AppRef, Component, Path, Query};
 use spring_web::{delete_api, get_api, patch_api, post_api, put_api};
 
 /// 检查用户任务数量限制
-async fn check_task_limit(db: &DbConn, user_id: i64, user_edition: Option<ProductEdition>) -> Result<()> {
+async fn check_task_limit(
+    db: &DbConn,
+    user_id: i64,
+    user_edition: Option<ProductEdition>,
+) -> Result<()> {
     let current_count = ScraperTask::find()
         .filter(scraper_task::Column::UserId.eq(user_id))
         .filter(scraper_task::Column::Deleted.eq(false))
@@ -28,10 +33,10 @@ async fn check_task_limit(db: &DbConn, user_id: i64, user_edition: Option<Produc
         .context("count user tasks failed")?;
 
     let limit = match user_edition {
-        None => 1, // 未登录用户限制1个任务
-        Some(ProductEdition::L0) => 3, // L0用户限制3个任务
-        Some(ProductEdition::L1) => 10, // L1用户限制10个任务
-        Some(ProductEdition::L2) => 50, // L2用户限制50个任务
+        None => 1,                       // 未登录用户限制1个任务
+        Some(ProductEdition::L0) => 3,   // L0用户限制3个任务
+        Some(ProductEdition::L1) => 10,  // L1用户限制10个任务
+        Some(ProductEdition::L2) => 50,  // L2用户限制50个任务
         Some(ProductEdition::L3) => 200, // L3用户限制200个任务
     };
 
@@ -56,7 +61,9 @@ async fn query_task(
     Component(db): Component<DbConn>,
     pagination: Pagination,
 ) -> Result<Json<Page<scraper_task::Model>>> {
-    let mut filter = scraper_task::Column::UserId.eq(claims.uid);
+    let mut filter = scraper_task::Column::UserId
+        .eq(claims.uid)
+        .and(scraper_task::Column::Deleted.eq(false));
     filter = match q.name {
         Some(name) => filter.and(scraper_task::Column::Name.starts_with(name)),
         None => filter,
@@ -328,4 +335,3 @@ async fn update_task_schedule_info(
 
     Ok(Json(task.id))
 }
-
