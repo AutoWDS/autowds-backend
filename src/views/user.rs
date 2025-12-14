@@ -38,6 +38,10 @@ pub struct RegisterReq {
     /// # 验证码
     #[validate(length(max = 8, message = "验证码过长"))]
     pub validate_code: String,
+
+    /// # 邀请码（可选）
+    #[validate(length(max = 32, message = "邀请码过长"))]
+    pub invite_code: Option<String>,
 }
 
 #[derive(Debug, Validate, Deserialize, JsonSchema)]
@@ -78,6 +82,8 @@ pub struct UserResp {
     pub email: String,
     pub locked: bool,
     pub last_login: Option<String>,
+    pub credits: i32,
+    pub invite_code: String,
 }
 
 impl From<account_user::Model> for UserResp {
@@ -91,6 +97,8 @@ impl From<account_user::Model> for UserResp {
             email: user.email,
             locked: user.locked,
             last_login: user.last_login.map(|ip| ip.to_string()),
+            credits: user.credits,
+            invite_code: user.invite_code,
         }
     }
 }
@@ -102,4 +110,26 @@ pub struct ValidateCodeEmailTemplate<'a> {
     pub tip: &'a str,
     /// # 验证码
     pub code: &'a str,
+}
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct CreditLogResp {
+    pub id: i64,
+    pub created: DateTime,
+    pub operation: String,
+    pub amount: i32,
+    pub balance: i32,
+    pub description: Option<String>,
+}
+
+impl From<crate::model::credit_log::Model> for CreditLogResp {
+    fn from(log: crate::model::credit_log::Model) -> Self {
+        Self {
+            id: log.id,
+            created: log.created,
+            operation: log.operation.to_string(),
+            amount: log.amount,
+            balance: log.balance,
+            description: log.description,
+        }
+    }
 }

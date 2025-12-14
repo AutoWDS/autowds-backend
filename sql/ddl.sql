@@ -12,6 +12,9 @@ create table if not exists account_user (
     passwd varchar(32) not null,
     locked boolean not null,
     last_login inet null,
+    credits int not null default 100,
+    invite_code varchar(20) unique not null,
+    invited_by bigint null,
     unique (email)
 );
 --- template
@@ -63,3 +66,17 @@ create table scraper_task (
     data jsonb default null
 );
 create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);
+--- credit_log
+create sequence if not exists seq_credit_log;
+create type credit_operation as enum ('REGISTER', 'INVITE', 'EXPORT', 'ADMIN_ADJUST');
+create table if not exists credit_log (
+    id bigint primary key default nextval('seq_credit_log'),
+    created timestamp not null,
+    user_id bigint not null,
+    operation credit_operation not null,
+    amount int not null,
+    balance int not null,
+    description varchar(200) null,
+    related_user_id bigint null
+);
+create index idx_credit_log_user_id_created on credit_log(user_id, created desc);

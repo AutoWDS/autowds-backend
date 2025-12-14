@@ -70,3 +70,31 @@ pub enum TemplateTopic {
     #[sea_orm(string_value = "OTHER")]
     Other,
 }
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+    JsonSchema,
+    Display,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "credit_operation")]
+pub enum CreditOperation {
+    /// # 注册奖励
+    #[sea_orm(string_value = "REGISTER")]
+    Register,
+    /// # 邀请奖励
+    #[sea_orm(string_value = "INVITE")]
+    Invite,
+    /// # 数据导出
+    #[sea_orm(string_value = "EXPORT")]
+    Export,
+    /// # 管理员调整
+    #[sea_orm(string_value = "ADMIN_ADJUST")]
+    AdminAdjust,
+}

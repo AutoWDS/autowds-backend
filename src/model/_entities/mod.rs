@@ -3,6 +3,7 @@
 pub mod prelude;
 
 pub mod account_user;
+pub mod credit_log;
 pub mod favorite;
 pub mod scraper_task;
 pub mod sea_orm_active_enums;

@@ -1,18 +1,19 @@
 use crate::{
     config::mail::Email,
-    model::{account_user, prelude::AccountUser, sea_orm_active_enums::ProductEdition},
+    model::{account_user, prelude::AccountUser, sea_orm_active_enums::{ProductEdition, CreditOperation}},
     router::ClientIp,
     utils::{
+        credit::CreditService,
         jwt::{self, Claims},
         mail,
         validate_code::{gen_validate_code, get_validate_code},
     },
     views::user::{
-        RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
+        CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
     },
 };
 use anyhow::Context;
-use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait};
 use spring_mail::Mailer;
 use spring_redis::Redis;
 use spring_sea_orm::DbConn;
@@ -51,6 +52,28 @@ async fn register(
     if user.is_some() {
         return Err(KnownWebError::bad_request("邮箱已被注册"))?;
     }
+
+    // 处理邀请码
+    let mut invited_by = None;
+    if let Some(invite_code) = &body.invite_code {
+        let inviter = AccountUser::find()
+            .filter(account_user::Column::InviteCode.eq(invite_code))
+            .one(&db)
+            .await
+            .context("查询邀请人失败")?;
+        
+        if let Some(inviter) = inviter {
+            invited_by = Some(inviter.id);
+        } else {
+            return Err(KnownWebError::bad_request("邀请码无效"))?;
+        }
+    }
+
+
+    // 使用事务确保原子性
+    let txn = db.begin().await.context("开始事务失败")?;
+    
+    // 先插入用户获取ID
     let user = account_user::ActiveModel {
         id: NotSet,
         locked: Set(false),
@@ -59,11 +82,42 @@ async fn register(
         email: Set(body.email),
         passwd: Set(body.passwd),
         last_login: Set(Some(client_ip.0.into())),
+        credits: Set(100), // 默认100积分
+        invite_code: Set("TEMP".to_string()), // 临时邀请码，获取ID后立即更新
+        invited_by: Set(invited_by),
         ..Default::default()
     }
-    .insert(&db)
+    .insert(&txn)
     .await
     .context("user insert failed")?;
+
+    // 立即生成邀请码并更新
+    let invite_code = CreditService::generate_invite_code(user.id);
+    let mut user_active: account_user::ActiveModel = user.clone().into();
+    user_active.invite_code = Set(invite_code);
+    let user = user_active.update(&txn).await.context("更新邀请码失败")?;
+
+    // 记录注册积分日志
+    CreditService::add_credits(
+        &txn,
+        user.id,
+        100,
+        CreditOperation::Register,
+        Some("注册奖励".to_string()),
+        None,
+    )
+    .await
+    .context("记录注册积分失败")?;
+
+    // 如果有邀请人，给邀请人增加积分
+    if let Some(inviter_id) = invited_by {
+        CreditService::handle_invite_register(&txn, inviter_id, user.id)
+            .await
+            .context("处理邀请奖励失败")?;
+    }
+    
+    // 提交事务
+    txn.commit().await.context("提交事务失败")?;
 
     Ok(Json(user.into()))
 }
@@ -198,4 +252,52 @@ async fn set_name(
     tracing::debug!("user#{} change name success", u.id);
 
     Ok(Json(true))
+}
+/// # 数据导出（扣减积分）
+/// @tag user
+#[post_api("/user/export")]
+async fn export_data(
+    claims: Claims,
+    Component(db): Component<DbConn>,
+) -> Result<Json<bool>> {
+    // 扣减1个积分
+    CreditService::deduct_credits(
+        &db,
+        claims.uid,
+        1,
+        CreditOperation::Export,
+        Some("数据导出".to_string()),
+    )
+    .await
+    .map_err(|e| {
+        if e.to_string().contains("积分不足") {
+            KnownWebError::bad_request("积分不足，无法导出数据")
+        } else {
+            KnownWebError::internal_server_error("扣减积分失败")
+        }
+    })?;
+
+    Ok(Json(true))
+}
+
+/// # 获取积分记录
+/// @tag user  
+#[get_api("/user/credits/logs")]
+async fn get_credit_logs(
+    claims: Claims,
+    Component(db): Component<DbConn>,
+) -> Result<Json<Vec<CreditLogResp>>> {
+    use crate::model::prelude::CreditLog;
+    use crate::model::credit_log;
+
+    let logs = CreditLog::find()
+        .filter(credit_log::Column::UserId.eq(claims.uid))
+        .order_by_desc(credit_log::Column::Created)
+        .limit(50)
+        .all(&db)
+        .await
+        .context("查询积分记录失败")?;
+
+    let resp: Vec<CreditLogResp> = logs.into_iter().map(|log| log.into()).collect();
+    Ok(Json(resp))
 }

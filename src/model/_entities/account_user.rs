@@ -18,6 +18,9 @@ pub struct Model {
     pub passwd: String,
     pub locked: bool,
     pub last_login: Option<IpNetwork>,
+    pub credits: i32,
+    pub invite_code: String,
+    pub invited_by: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
