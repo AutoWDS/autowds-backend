@@ -1,9 +1,9 @@
 use crate::{
     model::{
-        account_user, prelude::*, scraper_task, sea_orm_active_enums::ProductEdition,
+        account_user, prelude::*, scraper_task, sea_orm_active_enums::{ProductEdition, CreditOperation},
         task_template,
     },
-    utils::jwt::AdminClaims,
+    utils::{jwt::AdminClaims, credit::CreditService},
     views::admin::*,
 };
 use anyhow::Context;
@@ -66,6 +66,9 @@ async fn create_user(
         return Err(KnownWebError::bad_request("邮箱已被注册"))?;
     }
 
+    // 生成邀请码
+    let temp_invite_code = "TEMP".to_string();
+    
     let user = account_user::ActiveModel {
         id: NotSet,
         name: Set(req.username),
@@ -74,11 +77,32 @@ async fn create_user(
         locked: Set(false),
         edition: Set(ProductEdition::L0),
         last_login: Set(None),
+        credits: Set(100), // 默认100积分
+        invite_code: Set(temp_invite_code),
+        invited_by: Set(None),
         ..Default::default()
     }
     .insert(&db)
     .await
     .context("create user failed")?;
+
+    // 生成真正的邀请码并更新用户
+    let invite_code = CreditService::generate_invite_code(user.id);
+    let mut user_active: account_user::ActiveModel = user.clone().into();
+    user_active.invite_code = Set(invite_code);
+    let user = user_active.update(&db).await.context("更新邀请码失败")?;
+
+    // 记录注册积分日志
+    CreditService::add_credits(
+        &db,
+        user.id,
+        100,
+        CreditOperation::Register,
+        Some("管理员创建用户奖励".to_string()),
+        None,
+    )
+    .await
+    .context("记录注册积分失败")?;
 
     Ok(Json(UserResp::from(user)))
 }
@@ -134,6 +158,106 @@ async fn delete_user(
     .context("delete user failed")?;
 
     Ok(Json(true))
+}
+
+/// 调整用户积分
+#[post("/admin/user/{id}/adjust-credits")]
+async fn adjust_user_credits(
+    _admin: AdminClaims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(req): Json<AdjustCreditsReq>,
+) -> Result<Json<UserResp>> {
+    let user = AccountUser::find_by_id(id)
+        .one(&db)
+        .await
+        .context("find user failed")?
+        .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    // 调整积分
+    if req.amount > 0 {
+        CreditService::add_credits(
+            &db,
+            user.id,
+            req.amount,
+            CreditOperation::AdminAdjust,
+            Some(req.description),
+            None,
+        )
+        .await
+        .context("增加积分失败")?;
+    } else if req.amount < 0 {
+        CreditService::deduct_credits(
+            &db,
+            user.id,
+            -req.amount,
+            CreditOperation::AdminAdjust,
+            Some(req.description),
+        )
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("积分不足") {
+                KnownWebError::bad_request("用户积分不足")
+            } else {
+                KnownWebError::internal_server_error("扣减积分失败")
+            }
+        })?;
+    }
+
+    // 重新获取用户信息
+    let updated_user = AccountUser::find_by_id(id)
+        .one(&db)
+        .await
+        .context("find updated user failed")?
+        .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    Ok(Json(UserResp::from(updated_user)))
+}
+
+/// 修改用户版本等级
+#[post("/admin/user/{id}/update-edition")]
+async fn update_user_edition(
+    _admin: AdminClaims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Json(req): Json<UpdateUserEditionReq>,
+) -> Result<Json<UserResp>> {
+    let user = AccountUser::find_by_id(id)
+        .one(&db)
+        .await
+        .context("find user failed")?
+        .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    let old_edition = user.edition.clone();
+    let new_edition = req.edition.clone();
+    
+    // 更新用户版本等级
+    let updated_user = account_user::ActiveModel {
+        id: Set(user.id),
+        edition: Set(new_edition.clone()),
+        ..Default::default()
+    }
+    .update(&db)
+    .await
+    .context("update user edition failed")?;
+
+    // 记录版本等级变更日志（可以考虑添加到积分日志中作为管理员操作）
+    CreditService::add_credits(
+        &db,
+        user.id,
+        0, // 不调整积分，只记录操作
+        CreditOperation::AdminAdjust,
+        Some(format!("版本等级调整: {} -> {} ({})", 
+            old_edition.to_string(), 
+            new_edition.to_string(), 
+            req.description
+        )),
+        None,
+    )
+    .await
+    .context("记录版本等级变更日志失败")?;
+
+    Ok(Json(UserResp::from(updated_user)))
 }
 
 // ==================== 任务管理接口 ====================

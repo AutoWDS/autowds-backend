@@ -16,6 +16,10 @@ pub struct UserResp {
     pub email: String,
     pub status: String,
     pub created_at: String,
+    pub credits: i32,
+    pub invite_code: String,
+    pub invited_by: Option<i64>,
+    pub edition: ProductEdition,
 }
 
 impl From<account_user::Model> for UserResp {
@@ -26,6 +30,10 @@ impl From<account_user::Model> for UserResp {
             email: user.email,
             status: if user.locked { "locked".to_string() } else { "active".to_string() },
             created_at: user.created.format("%Y-%m-%d %H:%M:%S").to_string(),
+            credits: user.credits,
+            invite_code: user.invite_code,
+            invited_by: user.invited_by,
+            edition: user.edition,
         }
     }
 }
@@ -43,6 +51,18 @@ pub struct UpdateUserReq {
     pub email: String,
     pub locked: Option<bool>,
     pub edition: Option<ProductEdition>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdjustCreditsReq {
+    pub amount: i32,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateUserEditionReq {
+    pub edition: ProductEdition,
+    pub description: String,
 }
 
 // ==================== 任务相关 ====================
