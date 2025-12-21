@@ -17,6 +17,8 @@ use spring_web::{
     WebConfigurator,
 };
 
+mod pay_check;
+
 pub type TaskPublisher = RedisStorage<i64>;
 
 pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {

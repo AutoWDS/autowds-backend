@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod pay;
 pub mod statistics;
 pub mod task;
 pub mod template;

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ global.app_name }} - 支付确认</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .qrcode {
+            margin: 20px 0;
+        }
+        .qrcode img {
+            max-width: 200px;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        .refresh-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ global.app_name }} 支付确认</h1>
+        
+        <div class="order-info">
+            <h3>订单信息</h3>
+            <p><strong>订单号:</strong> {{ order_id }}</p>
+            <p><strong>支付方式:</strong> 
+                {% if pay_from == "alipay" %}
+                    支付宝
+                {% else %}
+                    微信支付
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="qrcode">
+            <h3>请使用
+                {% if pay_from == "alipay" %}
+                    支付宝
+                {% else %}
+                    微信
+                {% endif %}
+                扫描二维码支付
+            </h3>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qrcode_url }}" alt="支付二维码">
+        </div>
+
+        <div class="status" id="status">
+            <p>等待支付中...</p>
+            <button class="refresh-btn" onclick="checkStatus()">检查支付状态</button>
+        </div>
+    </div>
+
+    <script>
+        let checkInterval;
+        
+        function checkStatus() {
+            fetch(`/api/pay/{{ order_id }}/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusDiv = document.getElementById('status');
+                if (data === 'paid') {
+                    statusDiv.innerHTML = '<p style="color: green;">✅ 支付成功！</p>';
+                    statusDiv.style.backgroundColor = '#d4edda';
+                    statusDiv.style.borderColor = '#c3e6cb';
+                    clearInterval(checkInterval);
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else if (data === 'closed') {
+                    statusDiv.innerHTML = '<p style="color: red;">❌ 订单已关闭</p>';
+                    statusDiv.style.backgroundColor = '#f8d7da';
+                    statusDiv.style.borderColor = '#f5c6cb';
+                    clearInterval(checkInterval);
+                } else {
+                    statusDiv.innerHTML = '<p>等待支付中...</p><button class="refresh-btn" onclick="checkStatus()">检查支付状态</button>';
+                }
+            })
+            .catch(error => {
+                console.error('检查支付状态失败:', error);
+            });
+        }
+        
+        // 自动检查支付状态
+        checkInterval = setInterval(checkStatus, 3000);
+        
+        // 页面关闭时清除定时器
+        window.addEventListener('beforeunload', () => {
+            clearInterval(checkInterval);
+        });
+    </script>
+</body>
+</html>

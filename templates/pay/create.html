@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ global.app_name }} - 支付页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .price-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ global.app_name }} 会员购买</h1>
+            <p>用户ID: {{ user_id }}</p>
+        </div>
+
+        <form action="/api/pay/create" method="post">
+            <div class="form-group">
+                <label for="level">选择会员类型:</label>
+                <select name="level" id="level" required onchange="updatePrice()">
+                    <option value="">请选择会员类型</option>
+                    <option value="monthly">月度会员 - ¥29</option>
+                    <option value="quarterly">季度会员 - ¥79</option>
+                    <option value="half_year">半年会员 - ¥149</option>
+                    <option value="annual">年度会员 - ¥269</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pay_from">选择支付方式:</label>
+                <select name="pay_from" id="pay_from" required>
+                    <option value="">请选择支付方式</option>
+                    <option value="alipay">支付宝</option>
+                    <option value="wechat">微信支付</option>
+                </select>
+            </div>
+
+            <div class="price-info" id="price-info" style="display: none;">
+                <h3>价格信息</h3>
+                <p id="price-text"></p>
+            </div>
+
+            <button type="submit">立即支付</button>
+        </form>
+    </div>
+
+    <script>
+        function updatePrice() {
+            const level = document.getElementById('level').value;
+            const priceInfo = document.getElementById('price-info');
+            const priceText = document.getElementById('price-text');
+            
+            const prices = {
+                'monthly': '月度会员：¥29/月',
+                'quarterly': '季度会员：¥79/3个月（平均¥26.3/月）',
+                'half_year': '半年会员：¥149/6个月（平均¥24.8/月）',
+                'annual': '年度会员：¥269/12个月（平均¥22.4/月）'
+            };
+            
+            if (level && prices[level]) {
+                priceText.textContent = prices[level];
+                priceInfo.style.display = 'block';
+            } else {
+                priceInfo.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

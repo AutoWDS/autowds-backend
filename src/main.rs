@@ -12,6 +12,7 @@ use spring_mail::MailPlugin;
 use spring_redis::RedisPlugin;
 use spring_sea_orm::SeaOrmPlugin;
 use spring_web::{WebConfigurator, WebPlugin};
+use utils::pay_plugin::PayPlugin;
 
 #[tokio::main]
 async fn main() {
@@ -22,6 +23,7 @@ async fn main() {
         .add_plugin(RedisPlugin)
         .add_plugin(JobPlugin)
         .add_plugin(ApalisPlugin)
+        .add_plugin(PayPlugin)
         .add_router(router::router())
         .add_worker(task::add_storage)
         .run()

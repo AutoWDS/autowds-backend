@@ -26,3 +26,31 @@ one_indexed = true
 
 [redis]
 uri = "${REDIS_URL:redis://localhost}"
+
+[pay]
+# 测试模式，开启后所有订单金额为1分钱
+test_pay_amount = false
+# 是否启用微信支付
+wechat_pay_enable = true
+# 是否启用支付宝支付
+alipay_enable = true
+
+# 支付宝配置
+alipay_api_url = "https://openapi.alipay.com/gateway.do"
+# 沙箱环境: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+
+alipay_app_id = "你的应用ID"
+alipay_root_cert_sn = "支付宝根证书序列号"
+alipay_public_key = "支付宝公钥"
+alipay_app_cert_sn = "应用证书序列号"
+alipay_app_private_key = "应用私钥"
+alipay_app_public_key = "应用公钥"
+alipay_callback_url = "https://yourdomain.com/api/pay/notify/alipay"
+
+# 微信支付配置（通过环境变量配置）
+# WECHAT_PAY_MCH_ID=商户号
+# WECHAT_PAY_APPID=应用ID
+# WECHAT_PAY_API_V3_KEY=APIv3密钥
+# WECHAT_PAY_SERIAL_NO=证书序列号
+# WECHAT_PAY_PRIVATE_KEY=商户私钥路径
+# WECHAT_PAY_PUB_KEY_DIR=微信平台证书存储目录
