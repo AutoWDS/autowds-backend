@@ -41,12 +41,15 @@ COPY backend /build/
 RUN npm run build
 
 ############### rust builder
-FROM rust:latest AS builder
+FROM rust:bookworm AS builder
 
 RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     &&\
     apt-get clean
+
+# 设置静态链接环境变量
+ENV RUSTFLAGS="-C target-feature=+crt-static"
 
 WORKDIR /build
 
