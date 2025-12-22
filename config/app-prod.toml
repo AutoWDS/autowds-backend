@@ -3,3 +3,9 @@ static = { enable = true, uri = "/", path = "static" }
 
 [opentelemetry]
 enable = true
+
+[pay]
+wechat_pay_enable = true # 微信配置全为环境变量
+alipay_enable = true
+alipay_api_url = "${ALIPAY_API_URL:https://openapi.alipay.com/gateway.do}"
+alipay_app_id = "${ALIPAY_APP_ID:2021005188688168}"
