@@ -48,9 +48,6 @@ RUN apt-get update && apt-get install -y \
     &&\
     apt-get clean
 
-# 设置静态链接环境变量
-ENV RUSTFLAGS="-C target-feature=+crt-static"
-
 WORKDIR /build
 
 COPY Cargo.toml Cargo.lock ./
@@ -65,7 +62,12 @@ RUN cargo build --release
 ############### runner container
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y libssl-dev ca-certificates && update-ca-certificates && apt-get clean
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    ca-certificates \
+    libc6 \
+    && update-ca-certificates \
+    && apt-get clean
 
 ENV RUST_LOG=info
 
