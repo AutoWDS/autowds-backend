@@ -33,12 +33,12 @@ pub struct PayOrderService {
 impl PayOrderService {
     pub async fn create_order(
         &self,
-        user_id: i32,
+        uid: i64,
         level: OrderLevel,
         from: PayFrom,
-    ) -> anyhow::Result<(i32, Option<String>)> {
+    ) -> anyhow::Result<(i64, Option<String>)> {
         let order = pay_order::ActiveModel {
-            user_id: Set(user_id),
+            user_id: Set(uid),
             level: Set(level),
             pay_from: Set(from),
             ..Default::default()
@@ -64,7 +64,7 @@ impl PayOrderService {
     async fn wechat_pay(
         &self,
         subject: String,
-        order_id: i32,
+        order_id: i64,
         amount: i32,
     ) -> anyhow::Result<Option<String>> {
         let out_trade_no = format!("{:06}", order_id); // 微信"商户订单号"字符串规则校验最少6字节
@@ -85,7 +85,7 @@ impl PayOrderService {
     async fn alipay(
         &self,
         subject: String,
-        out_trade_no: i32,
+        out_trade_no: i64,
         amount: i32,
     ) -> anyhow::Result<Option<String>> {
         let alipay = self.alipay.clone();
@@ -296,7 +296,7 @@ impl PayOrderService {
         tracing::info!("接收到微信订单状态: {}", data.trade_state);
 
         let status = OrderStatus::from_wechat(&data.trade_state);
-        let out_trade_no = data.out_trade_no.parse::<i32>().context("解析订单号失败")?;
+        let out_trade_no = data.out_trade_no.parse::<i64>().context("解析订单号失败")?;
         let now = Local::now().naive_local();
 
         let model = pay_order::ActiveModel {
@@ -375,7 +375,7 @@ pub struct AlipayNotify {
     pub trade_no: String,
     pub app_id: String,
     pub auth_app_id: String,
-    pub out_trade_no: i32,
+    pub out_trade_no: i64,
     pub out_biz_no: Option<String>,
 
     #[serde(alias = "buyer_id", alias = "buyer_open_id")]

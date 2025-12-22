@@ -1,12 +1,12 @@
+use anyhow::Context;
+use chrono::{Days, NaiveDate};
 use sea_orm::{
     prelude::DateTime, sqlx::types::chrono::Local, ActiveModelBehavior, ActiveValue::Set,
     ColumnTrait, ConnectionTrait, DbErr, EntityTrait, FromQueryResult, QueryFilter, QuerySelect,
     Statement,
 };
-use serde::{Deserialize, Serialize};
-use spring::{async_trait, plugin::ComponentRegistry, App};
-use anyhow::Context;
-use chrono::{Days, NaiveDate};
+use serde::Serialize;
+use spring::async_trait;
 
 // 重新导出实体
 pub use super::_entities::pay_order::*;
@@ -61,8 +61,8 @@ impl Entity {
 
     pub async fn find_order_status<C: ConnectionTrait>(
         db: &C,
-        order_id: i32,
-        user_id: i32,
+        order_id: i64,
+        user_id: i64,
     ) -> anyhow::Result<Option<OrderStatus>> {
         Entity::find()
             .select_only()
@@ -89,8 +89,6 @@ impl Entity {
         });
 
         let monthly_amount = OrderLevel::Monthly.amount();
-        let quarterly_amount = OrderLevel::Quarterly.amount();
-        let half_year_amount = OrderLevel::HalfYear.amount();
         let annual_amount = OrderLevel::Annual.amount();
 
         let sql = format!(
@@ -108,8 +106,6 @@ impl Entity {
                     COUNT(*) as paid_count,
                     SUM(CASE 
                         WHEN level = 'monthly' THEN {monthly_amount}
-                        WHEN level = 'quarterly' THEN {quarterly_amount}
-                        WHEN level = 'half_year' THEN {half_year_amount}
                         WHEN level = 'annual' THEN {annual_amount}
                         ELSE 0
                     END) as paid_amount
@@ -125,8 +121,6 @@ impl Entity {
                     COUNT(*) as pending_count,
                     SUM(CASE 
                         WHEN level = 'monthly' THEN {monthly_amount}
-                        WHEN level = 'quarterly' THEN {quarterly_amount}
-                        WHEN level = 'half_year' THEN {half_year_amount}
                         WHEN level = 'annual' THEN {annual_amount}
                         ELSE 0
                     END) as pending_amount
@@ -149,8 +143,7 @@ impl Entity {
             "#,
         );
 
-        let stmt =
-            Statement::from_sql_and_values(db_backend, sql, vec![start.into(), end.into()]);
+        let stmt = Statement::from_sql_and_values(db_backend, sql, vec![start.into(), end.into()]);
 
         PayStatsByDay::find_by_statement(stmt)
             .all(db)
@@ -164,18 +157,14 @@ impl OrderLevel {
     pub fn title(&self) -> &'static str {
         match self {
             OrderLevel::Monthly => "月度",
-            OrderLevel::Quarterly => "季度", 
-            OrderLevel::HalfYear => "半年",
             OrderLevel::Annual => "年度",
         }
     }
 
     pub fn amount(&self) -> i32 {
         match self {
-            OrderLevel::Monthly => 2900,    // 29元
-            OrderLevel::Quarterly => 7900,  // 79元
-            OrderLevel::HalfYear => 14900,  // 149元
-            OrderLevel::Annual => 26900,    // 269元
+            OrderLevel::Monthly => 2900, // 29元
+            OrderLevel::Annual => 26900, // 269元
         }
     }
 }

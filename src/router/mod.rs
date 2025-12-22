@@ -1,5 +1,4 @@
 mod admin;
-mod error_messages;
 mod pay;
 mod pay_query;
 mod statistics;
@@ -17,20 +16,17 @@ use spring_web::{
         http::request::Parts,
         middleware::{self, Next},
         response::{IntoResponse, Response},
-        Extension,
     },
     extractor::{FromRequestParts, Request},
     Router,
 };
-use crate::views::pay::GlobalVariables;
 
 pub fn router() -> Router {
     let env = Env::init();
     Router::new().nest(
         "/api",
         spring_web::handler::auto_router()
-            .nest("/pay", pay::router())
-            .layer(Extension(GlobalVariables::default()))
+            .nest("/pay", pay::router().into())
             .layer(middleware::from_fn(problem_middleware))
             .layer(match env {
                 Env::Dev => ClientIpSource::ConnectInfo.into_extension(),

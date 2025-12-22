@@ -5,6 +5,7 @@ pub mod prelude;
 pub mod account_user;
 pub mod credit_log;
 pub mod favorite;
+pub mod pay_order;
 pub mod scraper_task;
 pub mod sea_orm_active_enums;
 pub mod task_template;

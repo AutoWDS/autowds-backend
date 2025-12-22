@@ -3,5 +3,6 @@
 pub use super::account_user::Entity as AccountUser;
 pub use super::credit_log::Entity as CreditLog;
 pub use super::favorite::Entity as Favorite;
+pub use super::pay_order::Entity as PayOrder;
 pub use super::scraper_task::Entity as ScraperTask;
 pub use super::task_template::Entity as TaskTemplate;

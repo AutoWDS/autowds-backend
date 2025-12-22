@@ -11,7 +11,7 @@ pub struct UserService {
 
 impl UserService {
     /// 确认用户支付，更新用户会员状态
-    pub async fn confirm_user(&self, user_id: i32, level: OrderLevel) -> Result<String> {
+    pub async fn confirm_user(&self, user_id: i64, level: OrderLevel) -> Result<String> {
         // TODO: 实现用户会员状态更新逻辑
         // 这里应该更新用户表中的会员级别和到期时间
         

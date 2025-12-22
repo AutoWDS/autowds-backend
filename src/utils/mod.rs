@@ -1,4 +1,3 @@
-pub mod auth;
 pub mod credit;
 pub mod jwt;
 pub mod mail;

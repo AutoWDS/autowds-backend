@@ -44,7 +44,7 @@ apalis-core = { version = "1.0.0-beta.2" }
 
 # 支付相关依赖
 alipay_sdk_rust = "1"
-wechat-pay-rust-sdk = "0.2"
+wechat-pay-rust-sdk = {version="0.2", features = ["async"]}
 derive_more = { version = "1.0", features = ["deref"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde_urlencoded = "0.7"

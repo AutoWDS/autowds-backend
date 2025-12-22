@@ -80,3 +80,32 @@ create table if not exists credit_log (
     related_user_id bigint null
 );
 create index idx_credit_log_user_id_created on credit_log(user_id, created desc);
+
+-- 创建订单级别枚举类型
+create type order_level as enum ('monthly', 'annual');
+
+-- 创建支付来源枚举类型  
+create type pay_from as enum ('alipay', 'wechat');
+
+-- 创建订单状态枚举类型
+create type order_status as enum ('created', 'paid', 'closed');
+
+-- 支付订单表
+create table if not exists pay_order (
+    id serial primary key,
+    user_id integer not null,
+    level varchar(20) not null check (level in ('monthly', 'annual')),
+    edition product_edition not null,
+    pay_from varchar(20) not null check (pay_from in ('alipay', 'wechat')),
+    status varchar(20) not null default 'created' check (status in ('created', 'paid', 'closed')),
+    created timestamp not null default current_timestamp,
+    modified timestamp not null default current_timestamp,
+    confirm timestamp null,
+    resp jsonb null,
+    
+    -- 索引
+    index idx_pay_order_user_id (user_id),
+    index idx_pay_order_status (status),
+    index idx_pay_order_created (created),
+    index idx_pay_order_confirm (confirm)
+);

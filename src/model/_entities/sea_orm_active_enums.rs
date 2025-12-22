@@ -98,3 +98,78 @@ pub enum CreditOperation {
     #[sea_orm(string_value = "ADMIN_ADJUST")]
     AdminAdjust,
 }
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+    JsonSchema,
+    Display,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "order_level")]
+pub enum OrderLevel {
+    /// # 月度
+    #[sea_orm(string_value = "monthly")]
+    Monthly,
+    /// # 年度
+    #[sea_orm(string_value = "annual")]
+    Annual,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+    JsonSchema,
+    Display,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "pay_from")]
+pub enum PayFrom {
+    /// # 支付宝
+    #[sea_orm(string_value = "alipay")]
+    Alipay,
+    /// # 微信
+    #[sea_orm(string_value = "wechat")]
+    Wechat,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+    JsonSchema,
+    Display,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "order_status")]
+pub enum OrderStatus {
+    /// # 已创建
+    #[sea_orm(string_value = "created")]
+    Created,
+    /// # 已支付
+    #[sea_orm(string_value = "paid")]
+    Paid,
+    /// # 已关闭
+    #[sea_orm(string_value = "closed")]
+    Closed,
+}
