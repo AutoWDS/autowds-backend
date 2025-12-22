@@ -1,6 +1,5 @@
 use crate::model::sea_orm_active_enums::{OrderLevel, PayFrom};
-use askama::Template;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct PayStatusResponse {

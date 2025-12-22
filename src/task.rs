@@ -12,10 +12,6 @@ use spring_apalis::apalis::prelude::*;
 use spring_apalis::apalis_redis::RedisStorage;
 use spring_job::extractor::{Component, Data};
 use spring_redis::Redis;
-use spring_web::{
-    axum::{Extension, Router},
-    WebConfigurator,
-};
 
 mod pay_check;
 

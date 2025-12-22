@@ -1,35 +1,29 @@
 use crate::{
     model::{
-        pay_order::Entity as PayOrder,
-        sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom},
+        pay_order::{self, Entity as PayOrder},
+        sea_orm_active_enums::OrderStatus,
     },
     router::pay_query::TradeCreateQuery,
-    utils::{
-        jwt::Claims,
-        pay_service::{AlipayNotify, PayOrderService},
-        user_service::UserService,
-    },
+    utils::{jwt::Claims, pay_service::PayOrderService, user_service::UserService},
 };
-use axum_extra::headers::{HeaderMap, HeaderValue};
+use axum_extra::headers::HeaderMap;
 use chrono::NaiveDate;
 use sea_orm::DbConn;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use spring::tracing;
 use spring_web::extractor::Component;
 use spring_web::{
     axum::{
         self,
-        extract::{Query, State},
+        extract::Query,
         http::StatusCode,
         response::{IntoResponse, Response},
         routing::{get, post},
-        Extension, Form, Json, Router,
+        Form, Json, Router,
     },
     extractor::Path,
 };
-use std::collections::HashMap;
-use wechat_pay_rust_sdk::model::WechatPayNotify;
 
 pub fn router() -> Router {
     Router::new()
@@ -70,7 +64,7 @@ async fn pay_status(
     Path(order_id): Path<i64>,
     Component(db): Component<DbConn>,
 ) -> Result<Json<OrderStatus>, Response> {
-    let status = crate::model::pay_order::Entity::find_order_status(&db, order_id, claims.uid)
+    let status = pay_order::Entity::find_order_status(&db, order_id, claims.uid)
         .await
         .map_err(|e| {
             tracing::error!("查询订单状态失败: {}", e);
@@ -130,7 +124,7 @@ async fn wechat_pay_callback(
         Ok(model) => model,
     };
 
-    let crate::model::pay_order::Model { user_id, level, .. } = model;
+    let pay_order::Model { user_id, level, .. } = model;
     match us.confirm_user(user_id, level).await {
         Err(e) => {
             tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
@@ -162,7 +156,7 @@ async fn alipay_callback(
         Ok(model) => model,
     };
 
-    let crate::model::pay_order::Model { user_id, level, .. } = model;
+    let pay_order::Model { user_id, level, .. } = model;
     match us.confirm_user(user_id, level).await {
         Err(e) => {
             tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
