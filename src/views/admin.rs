@@ -1,6 +1,7 @@
-use crate::model::{account_user, scraper_task, sea_orm_active_enums::ProductEdition, task_template};
+use crate::model::{account_user, scraper_task, sea_orm_active_enums::{ProductEdition, TemplateTopic}, task_template};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use validator::Validate;
 
 // ==================== 用户相关 ====================
 
@@ -38,30 +39,38 @@ impl From<account_user::Model> for UserResp {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct CreateUserReq {
+    #[validate(length(min = 1, max = 32, message = "用户名长度必须在1-32字符之间"))]
     pub username: String,
+    #[validate(email(message = "邮箱格式不正确"), length(max = 64, message = "邮箱长度不能超过64字符"))]
     pub email: String,
+    #[validate(length(min = 6, max = 32, message = "密码长度必须在6-32字符之间"))]
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateUserReq {
+    #[validate(length(min = 1, max = 32, message = "用户名长度必须在1-32字符之间"))]
     pub username: String,
+    #[validate(email(message = "邮箱格式不正确"), length(max = 64, message = "邮箱长度不能超过64字符"))]
     pub email: String,
     pub locked: Option<bool>,
     pub edition: Option<ProductEdition>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct AdjustCreditsReq {
+    #[validate(range(min = -10000, max = 10000, message = "积分调整范围必须在-10000到10000之间"))]
     pub amount: i32,
+    #[validate(length(min = 1, max = 200, message = "描述长度必须在1-200字符之间"))]
     pub description: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateUserEditionReq {
     pub edition: ProductEdition,
+    #[validate(length(min = 1, max = 200, message = "描述长度必须在1-200字符之间"))]
     pub description: String,
 }
 
@@ -103,14 +112,17 @@ impl From<scraper_task::Model> for TaskResp {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct CreateTaskReq {
+    #[validate(length(min = 1, max = 60, message = "任务名称长度必须在1-60字符之间"))]
     pub name: String,
+    #[validate(range(min = 1, message = "用户ID必须大于0"))]
     pub user_id: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateTaskReq {
+    #[validate(length(min = 1, max = 60, message = "任务名称长度必须在1-60字符之间"))]
     pub name: String,
 }
 
@@ -122,6 +134,11 @@ pub struct TemplateResp {
     pub name: String,
     pub description: String,
     pub config: Value,
+    pub topic: TemplateTopic,
+    pub edition: ProductEdition,
+    pub img: String,
+    pub lang: String,
+    pub params: Option<Value>,
     pub created_at: String,
 }
 
@@ -132,23 +149,46 @@ impl From<task_template::Model> for TemplateResp {
             name: template.name,
             description: template.detail,
             config: template.rule,
+            topic: template.topic,
+            edition: template.edition,
+            img: template.img,
+            lang: template.lang,
+            params: template.params,
             created_at: template.created.format("%Y-%m-%d %H:%M:%S").to_string(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct CreateTemplateReq {
+    #[validate(length(min = 1, max = 80, message = "模板名称长度必须在1-80字符之间"))]
     pub name: String,
+    #[validate(length(max = 200, message = "描述长度不能超过200字符"))]
     pub description: Option<String>,
     pub config: Option<Value>,
+    pub topic: TemplateTopic,
+    pub edition: ProductEdition,
+    #[validate(length(max = 200, message = "图片URL长度不能超过200字符"))]
+    pub img: Option<String>,
+    #[validate(length(min = 2, max = 6, message = "语言代码长度必须在2-6字符之间"))]
+    pub lang: String,
+    pub params: Option<Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct UpdateTemplateReq {
+    #[validate(length(min = 1, max = 80, message = "模板名称长度必须在1-80字符之间"))]
     pub name: String,
+    #[validate(length(max = 200, message = "描述长度不能超过200字符"))]
     pub description: Option<String>,
     pub config: Option<Value>,
+    pub topic: TemplateTopic,
+    pub edition: ProductEdition,
+    #[validate(length(max = 200, message = "图片URL长度不能超过200字符"))]
+    pub img: Option<String>,
+    #[validate(length(min = 2, max = 6, message = "语言代码长度必须在2-6字符之间"))]
+    pub lang: String,
+    pub params: Option<Value>,
 }
 
 // ==================== 统计相关 ====================

@@ -4,6 +4,7 @@ use crate::model::sea_orm_active_enums::ProductEdition;
 use crate::utils::jwt::Claims;
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
+use axum_valid::Valid;
 use itertools::Itertools;
 use sea_orm::{
     sqlx::types::chrono::Local, ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, PaginatorTrait,
@@ -82,7 +83,7 @@ async fn query_task(
 async fn add_task(
     claims: Claims,
     Component(db): Component<DbConn>,
-    Json(body): Json<ScraperTaskReq>,
+    Valid(Json(body)): Valid<Json<ScraperTaskReq>>,
 ) -> Result<Json<scraper_task::Model>> {
     // 获取用户信息以检查版本级别
     let user = AccountUser::find_by_id(claims.uid)
@@ -113,7 +114,7 @@ async fn add_task(
 async fn add_batch_task(
     claims: Claims,
     Component(db): Component<DbConn>,
-    Json(batch): Json<Vec<ScraperTaskReq>>,
+    Valid(Json(batch)): Valid<Json<Vec<ScraperTaskReq>>>,
 ) -> Result<Json<i64>> {
     if batch.len() > 10 {
         Err(KnownWebError::bad_request("任务过多无法保存"))?;
@@ -212,7 +213,7 @@ async fn update_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(body): Json<ScraperUpdateTaskReq>,
+    Valid(Json(body)): Valid<Json<ScraperUpdateTaskReq>>,
 ) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 

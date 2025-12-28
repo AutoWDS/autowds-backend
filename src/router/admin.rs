@@ -7,6 +7,7 @@ use crate::{
     views::admin::*,
 };
 use anyhow::Context;
+use axum_valid::Valid;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set,
 };
@@ -53,7 +54,7 @@ async fn get_user_list(
 async fn create_user(
     _admin: AdminClaims,
     Component(db): Component<DbConn>,
-    Json(req): Json<CreateUserReq>,
+    Valid(Json(req)): Valid<Json<CreateUserReq>>,
 ) -> Result<Json<UserResp>> {
     // 检查邮箱是否已存在
     let existing = AccountUser::find()
@@ -113,7 +114,7 @@ async fn update_user(
     _admin: AdminClaims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(req): Json<UpdateUserReq>,
+    Valid(Json(req)): Valid<Json<UpdateUserReq>>,
 ) -> Result<Json<UserResp>> {
     let user = AccountUser::find_by_id(id)
         .one(&db)
@@ -166,7 +167,7 @@ async fn adjust_user_credits(
     _admin: AdminClaims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(req): Json<AdjustCreditsReq>,
+    Valid(Json(req)): Valid<Json<AdjustCreditsReq>>,
 ) -> Result<Json<UserResp>> {
     let user = AccountUser::find_by_id(id)
         .one(&db)
@@ -220,7 +221,7 @@ async fn update_user_edition(
     _admin: AdminClaims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(req): Json<UpdateUserEditionReq>,
+    Valid(Json(req)): Valid<Json<UpdateUserEditionReq>>,
 ) -> Result<Json<UserResp>> {
     let user = AccountUser::find_by_id(id)
         .one(&db)
@@ -299,7 +300,7 @@ async fn get_task_list(
 async fn create_task(
     _admin: AdminClaims,
     Component(db): Component<DbConn>,
-    Json(req): Json<CreateTaskReq>,
+    Valid(Json(req)): Valid<Json<CreateTaskReq>>,
 ) -> Result<Json<TaskResp>> {
     let task = scraper_task::ActiveModel {
         user_id: Set(req.user_id),
@@ -321,7 +322,7 @@ async fn update_task(
     _admin: AdminClaims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(req): Json<UpdateTaskReq>,
+    Valid(Json(req)): Valid<Json<UpdateTaskReq>>,
 ) -> Result<Json<TaskResp>> {
     let task = ScraperTask::find_by_id(id)
         .one(&db)
@@ -437,21 +438,19 @@ async fn get_template_list(
 async fn create_template(
     _admin: AdminClaims,
     Component(db): Component<DbConn>,
-    Json(req): Json<CreateTemplateReq>,
+    Valid(Json(req)): Valid<Json<CreateTemplateReq>>,
 ) -> Result<Json<TemplateResp>> {
-    use crate::model::sea_orm_active_enums::TemplateTopic;
-    
     let template = task_template::ActiveModel {
         name: Set(req.name),
         detail: Set(req.description.unwrap_or_default()),
         rule: Set(req.config.unwrap_or_else(|| serde_json::json!({}))),
         data: Set(serde_json::json!({})),
         fav_count: Set(0),
-        topic: Set(TemplateTopic::Other),
-        edition: Set(ProductEdition::L0),
-        lang: Set("zh".to_string()),
-        img: Set(String::new()),
-        params: Set(None),
+        topic: Set(req.topic),
+        edition: Set(req.edition),
+        lang: Set(req.lang),
+        img: Set(req.img.unwrap_or_default()),
+        params: Set(req.params),
         ..Default::default()
     }
     .insert(&db)
@@ -467,7 +466,7 @@ async fn update_template(
     _admin: AdminClaims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
-    Json(req): Json<UpdateTemplateReq>,
+    Valid(Json(req)): Valid<Json<UpdateTemplateReq>>,
 ) -> Result<Json<TemplateResp>> {
     let template = TaskTemplate::find_by_id(id)
         .one(&db)
@@ -480,6 +479,11 @@ async fn update_template(
         name: Set(req.name),
         detail: Set(req.description.unwrap_or(template.detail)),
         rule: Set(req.config.unwrap_or(template.rule)),
+        topic: Set(req.topic),
+        edition: Set(req.edition),
+        lang: Set(req.lang),
+        img: Set(req.img.unwrap_or(template.img)),
+        params: Set(req.params.or(template.params)),
         ..Default::default()
     }
     .update(&db)

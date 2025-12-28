@@ -13,6 +13,7 @@ use crate::{
     },
 };
 use anyhow::Context;
+use axum_valid::Valid;
 use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait};
 use spring_mail::Mailer;
 use spring_redis::Redis;
@@ -31,7 +32,7 @@ async fn register(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
     ClientIp(client_ip): ClientIp,
-    Json(body): Json<RegisterReq>,
+    Valid(Json(body)): Valid<Json<RegisterReq>>,
 ) -> Result<Json<UserResp>> {
     let code = get_validate_code(&mut redis, &body.email).await?;
 
@@ -146,7 +147,7 @@ async fn register_validate_code(
     Component(mut redis): Component<Redis>,
     Component(mailer): Component<Mailer>,
     Config(email): Config<Email>,
-    Json(body): Json<SendEmailReq>,
+    Valid(Json(body)): Valid<Json<SendEmailReq>>,
 ) -> Result<Json<bool>> {
     let code = gen_validate_code(&mut redis, &body.email).await?;
 
@@ -168,7 +169,7 @@ async fn reset_validate_code(
     Component(mut redis): Component<Redis>,
     Component(mailer): Component<Mailer>,
     Config(email): Config<Email>,
-    Json(body): Json<SendEmailReq>,
+    Valid(Json(body)): Valid<Json<SendEmailReq>>,
 ) -> Result<Json<bool>> {
     let code = gen_validate_code(&mut redis, &body.email).await?;
 
@@ -190,7 +191,7 @@ async fn reset_password(
     Component(mut redis): Component<Redis>,
     Component(db): Component<DbConn>,
     ClientIp(client_ip): ClientIp,
-    Json(req): Json<ResetPasswdReq>,
+    Valid(Json(req)): Valid<Json<ResetPasswdReq>>,
 ) -> Result<String> {
     let code = get_validate_code(&mut redis, &req.email)
         .await?
@@ -228,7 +229,7 @@ async fn reset_password(
 async fn set_name(
     claims: Claims,
     Component(db): Component<DbConn>,
-    Json(req): Json<SetNameReq>,
+    Valid(Json(req)): Valid<Json<SetNameReq>>,
 ) -> Result<Json<bool>> {
     let u = AccountUser::find_by_id(claims.uid)
         .one(&db)

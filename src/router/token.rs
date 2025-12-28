@@ -4,6 +4,7 @@ use crate::{
     views::{token::UserToken, user::AuthenticationToken},
 };
 use anyhow::Context as _;
+use axum_valid::Valid;
 use sea_orm::{ColumnTrait as _, EntityTrait as _, QueryFilter as _};
 use spring_sea_orm::DbConn;
 use spring_web::post_api;
@@ -18,7 +19,7 @@ use spring_web::{
 #[post_api("/token")]
 async fn login(
     Component(db): Component<DbConn>,
-    Json(body): Json<AuthenticationToken>,
+    Valid(Json(body)): Valid<Json<AuthenticationToken>>,
 ) -> Result<Json<UserToken>> {
     let user = AccountUser::find()
         .filter(account_user::Column::Email.eq(&body.email))
