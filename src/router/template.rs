@@ -123,13 +123,14 @@ async fn delete_favorite(
     if effect <= 0 {
         Err(KnownWebError::not_found("模板不存在"))?;
     }
-    let result = favorite::ActiveModel {
-        user_id: Set(claims.uid),
-        template_id: Set(template_id),
-        ..Default::default()
-    }
-    .delete(&db)
-    .await
-    .context("favorite delete failed")?;
+    let result = Favorite::delete_many()
+        .filter(
+            favorite::Column::UserId
+                .eq(claims.uid)
+                .and(favorite::Column::TemplateId.eq(template_id))
+        )
+        .exec(&db)
+        .await
+        .context("favorite delete failed")?;
     Ok(Json(result.rows_affected > 0))
 }

@@ -46,6 +46,7 @@ impl IntoCondition for TemplateQuery {
 
 /// # 预制模板列表
 #[derive(Debug, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ListTemplateResp {
     id: i64,
     created: DateTime,
