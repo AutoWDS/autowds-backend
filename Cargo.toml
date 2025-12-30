@@ -50,4 +50,4 @@ chrono = { version = "0.4", features = ["serde"] }
 serde_urlencoded = "0.7"
 
 [patch.crates-io]
-axum_valid = { git = "https://github.com/holmofy/axum_valid", branch = "patch-1" }
+axum-valid = { git = "https://github.com/holmofy/axum-valid", branch = "patch-1" }

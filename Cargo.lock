@@ -77,21 +77,6 @@ dependencies = [
 
 [[package]]
 name = "aide"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6966317188cdfe54c58c0900a195d021294afb3ece9b7073d09e4018dbb1e3a2"
-dependencies = [
- "cfg-if",
- "indexmap 2.12.0",
- "schemars 0.9.0",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tracing",
-]
-
-[[package]]
-name = "aide"
 version = "0.16.0-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc156b16d6d8e9bb84a7cba8b93fc399c0654bfbb927832ea7ab326d5d6895e2"
@@ -648,10 +633,9 @@ dependencies = [
 [[package]]
 name = "axum-valid"
 version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3881b4b05ede123ff3c82f41c63e47425443556365b47b2ba4d05098a5bd2645"
+source = "git+https://github.com/holmofy/axum-valid?branch=patch-1#4f9db9d7291ab36c65b0add2019fb4be5438ec8b"
 dependencies = [
- "aide 0.15.1",
+ "aide",
  "axum",
  "validator",
 ]
@@ -3624,9 +3608,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd191f9397d57d581cddd31014772520aa448f65ef991055d7f61582c65165f"
 dependencies = [
  "dyn-clone",
- "indexmap 2.12.0",
  "ref-cast",
- "schemars_derive 0.9.0",
  "serde",
  "serde_json",
 ]
@@ -3641,21 +3623,9 @@ dependencies = [
  "dyn-clone",
  "indexmap 2.12.0",
  "ref-cast",
- "schemars_derive 1.1.0",
+ "schemars_derive",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "schemars_derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5016d94c77c6d32f0b8e08b781f7dc8a90c2007d4e77472cc2807bc10a8438fe"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals",
- "syn 2.0.109",
 ]
 
 [[package]]
@@ -4218,7 +4188,7 @@ version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb6e6e26d5d9c9330f2c5e685a8e6798ccb58dd31cd617c0157448f1a23890c0"
 dependencies = [
- "aide 0.16.0-alpha.1",
+ "aide",
  "anyhow",
  "axum",
  "byte-unit",

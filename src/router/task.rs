@@ -214,7 +214,7 @@ async fn update_task(
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
     Valid(Json(body)): Valid<Json<ScraperUpdateTaskReq>>,
-) -> Result<Json<i64>> {
+) -> Result<Json<scraper_task::Model>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     scraper_task::ActiveModel {
@@ -227,7 +227,7 @@ async fn update_task(
     .await
     .context("save scraper task failed")?;
 
-    Ok(Json(task.id))
+    Ok(Json(task))
 }
 
 /// # 获取任务规则
