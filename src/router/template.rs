@@ -86,7 +86,7 @@ async fn my_favorite(
 
 /// # 收藏任务模板
 /// @tag template
-#[post_api("/{template_id}/favorite")]
+#[post_api("/template/{template_id}/favorite")]
 async fn add_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,
@@ -111,7 +111,7 @@ async fn add_favorite(
 
 /// # 取消收藏任务模板
 /// @tag template
-#[delete_api("/{template_id}/favorite")]
+#[delete_api("/template/{template_id}/favorite")]
 async fn delete_favorite(
     Path(template_id): Path<i64>,
     claims: Claims,
