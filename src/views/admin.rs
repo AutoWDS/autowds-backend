@@ -133,7 +133,7 @@ pub struct TemplateResp {
     pub id: i64,
     pub name: String,
     pub description: String,
-    pub config: Value,
+    pub rule: Value,
     pub topic: TemplateTopic,
     pub edition: ProductEdition,
     pub img: String,
@@ -148,7 +148,7 @@ impl From<task_template::Model> for TemplateResp {
             id: template.id,
             name: template.name,
             description: template.detail,
-            config: template.rule,
+            rule: template.rule,
             topic: template.topic,
             edition: template.edition,
             img: template.img,
@@ -165,7 +165,7 @@ pub struct CreateTemplateReq {
     pub name: String,
     #[validate(length(max = 200, message = "描述长度不能超过200字符"))]
     pub description: Option<String>,
-    pub config: Option<Value>,
+    pub rule: Option<Value>,
     pub topic: TemplateTopic,
     pub edition: ProductEdition,
     #[validate(length(max = 200, message = "图片URL长度不能超过200字符"))]
@@ -181,7 +181,7 @@ pub struct UpdateTemplateReq {
     pub name: String,
     #[validate(length(max = 200, message = "描述长度不能超过200字符"))]
     pub description: Option<String>,
-    pub config: Option<Value>,
+    pub rule: Option<Value>,
     pub topic: TemplateTopic,
     pub edition: ProductEdition,
     #[validate(length(max = 200, message = "图片URL长度不能超过200字符"))]

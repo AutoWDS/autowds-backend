@@ -443,7 +443,7 @@ async fn create_template(
     let template = task_template::ActiveModel {
         name: Set(req.name),
         detail: Set(req.description.unwrap_or_default()),
-        rule: Set(req.config.unwrap_or_else(|| serde_json::json!({}))),
+        rule: Set(req.rule.unwrap_or_else(|| serde_json::json!({}))),
         data: Set(serde_json::json!({})),
         fav_count: Set(0),
         topic: Set(req.topic),
@@ -478,7 +478,7 @@ async fn update_template(
         id: Set(template.id),
         name: Set(req.name),
         detail: Set(req.description.unwrap_or(template.detail)),
-        rule: Set(req.config.unwrap_or(template.rule)),
+        rule: Set(req.rule.unwrap_or(template.rule)),
         topic: Set(req.topic),
         edition: Set(req.edition),
         lang: Set(req.lang),
