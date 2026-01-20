@@ -2,6 +2,7 @@ use crate::model::account_user;
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use derive_more::derive::Deref;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use lazy_static::lazy_static;
 use schemars::json_schema;
@@ -166,7 +167,8 @@ impl OperationInput for OptionalClaims {
 }
 
 /// # Admin Claims - 管理员权限验证
-pub struct AdminClaims(pub Claims);
+#[derive(Debug, Deref)]
+pub struct AdminClaims(Claims);
 
 impl<S> FromRequestParts<S> for AdminClaims
 where

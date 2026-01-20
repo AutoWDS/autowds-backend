@@ -14,7 +14,7 @@ spring-web = { version = "0.4", features = ["openapi", "openapi-scalar"] }
 spring-mail = "0.4"
 spring-redis = "0.4"
 spring-job = { version = "0.4", features = ["postgres_storage"] }
-spring-apalis = { version = "0.4", features = ["redis"] }
+spring-apalis = { version = "0.4", features = ["redis", "board", "board-web"] }
 spring-sea-orm = { version = "0.4", features = [
     "postgres",
     "with-web",
@@ -39,8 +39,6 @@ tracing = "0.1"
 rand = "0.9"
 askama = "0.12"
 itertools = "0.14"
-apalis-board-api = { version = "1.0.0-beta.1", features = ["axum"] }
-apalis-core = { version = "1.0.0-beta.2" }
 
 # 支付相关依赖
 alipay_sdk_rust = "1"

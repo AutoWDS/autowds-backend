@@ -1,17 +1,22 @@
-use apalis_board_api::{
-    framework::{ApiBuilder, RegisterRoute as _},
-    sse::{TracingBroadcaster, TracingSubscriber},
-    ui::ServeUI,
-};
 use spring::{
     app::AppBuilder,
     plugin::{ComponentRegistry, MutableComponentRegistry as _},
 };
-use spring_apalis::apalis::prelude::Monitor;
-use spring_apalis::apalis::prelude::*;
 use spring_apalis::apalis_redis::RedisStorage;
+use spring_apalis::{
+    apalis::prelude::Monitor,
+    apalis_board::axum::{
+        framework::{ApiBuilder, RegisterRoute as _},
+        sse::{TracingBroadcaster, TracingSubscriber},
+    },
+};
+use spring_apalis::{apalis::prelude::*, apalis_board::axum::ui::ServeUI};
 use spring_job::extractor::{Component, Data};
 use spring_redis::Redis;
+use spring_web::{
+    axum::{Extension, Router},
+    WebConfigurator as _,
+};
 
 mod pay_check;
 
@@ -24,12 +29,12 @@ pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {
     let redis = app.get_expect_component::<Redis>();
     let storage = TaskPublisher::new(redis);
     app.add_component(storage.clone());
-    // let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
-    // let router = Router::new()
-    //     .nest("/apalis", apalis_api)
-    //     .fallback_service(ServeUI::new())
-    //     .layer(Extension(broadcaster.clone()));
-    // app.add_router(router.into());
+    let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
+    let router = Router::new()
+        .nest("/apalis", apalis_api)
+        .fallback_service(ServeUI::new())
+        .layer(Extension(broadcaster.clone()));
+    app.add_router(router.into());
     monitor
 }
 
