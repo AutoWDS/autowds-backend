@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use spring::config::Configurable;
+use summer::config::Configurable;
 
 #[derive(Debug, Clone, Configurable, Deserialize)]
 #[config_prefix = "pay"]

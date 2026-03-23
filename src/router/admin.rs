@@ -9,10 +9,10 @@ use crate::{
 use anyhow::Context;
 use axum_valid::Valid;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, Set,
 };
-use spring_sea_orm::pagination::{Page, Pagination, PaginationExt};
-use spring_web::{
+use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use summer_web::{
     axum::Json,
     delete, get,
     error::{KnownWebError, Result},
@@ -530,7 +530,7 @@ async fn get_task_statistics(
     // 统计待执行任务
     let pending_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE data IS NULL";
     let pending: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             pending_sql,
             [],
@@ -544,7 +544,7 @@ async fn get_task_statistics(
     let running_sql =
         "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE data IS NOT NULL AND deleted = false";
     let running: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             running_sql,
             [],
@@ -557,7 +557,7 @@ async fn get_task_statistics(
     // 统计已完成任务
     let completed_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE deleted = true";
     let completed: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             completed_sql,
             [],
@@ -589,7 +589,7 @@ async fn get_statistics_overview(
     // 统计用户总数
     let user_count_sql = "SELECT COUNT(*)::bigint as count FROM account_user";
     let user_count: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             user_count_sql,
             [],
@@ -602,7 +602,7 @@ async fn get_statistics_overview(
     // 统计任务总数
     let task_count_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task";
     let task_count: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             task_count_sql,
             [],
@@ -615,7 +615,7 @@ async fn get_statistics_overview(
     // 统计模板总数
     let template_count_sql = "SELECT COUNT(*)::bigint as count FROM task_template";
     let template_count: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             template_count_sql,
             [],

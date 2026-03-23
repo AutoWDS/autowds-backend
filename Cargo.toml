@@ -9,18 +9,18 @@ path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
-spring = "0.4"
-spring-web = { version = "0.4", features = ["openapi", "openapi-scalar"] }
-spring-mail = "0.4"
-spring-redis = "0.4"
-spring-job = { version = "0.4", features = ["postgres_storage"] }
-spring-apalis = { version = "0.4", features = ["redis", "board", "board-web"] }
-spring-sea-orm = { version = "0.4", features = [
+summer = "0.5.0"
+summer-web = { version = "0.5.0", features = ["openapi", "openapi-scalar"] }
+summer-mail = "0.5.0"
+summer-redis = "0.5.0"
+summer-job = { version = "0.5.0", features = ["postgres_storage"] }
+summer-apalis = { version = "0.5.0-rc.0", features = ["redis", "board", "board-web"] }
+summer-sea-orm = { version = "0.5.0-rc.0", features = [
     "postgres",
     "with-web",
     "with-web-openapi",
 ] }
-sea-orm = { version = "1.0", features = ["with-ipnetwork"] }
+sea-orm = { version = "2.0.0-rc", features = ["with-ipnetwork"] }
 serde = "1.0"
 serde_json = "1.0"
 serde_with = "3.14"

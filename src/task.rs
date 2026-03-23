@@ -1,19 +1,20 @@
-use spring::{
+use summer::{
     app::AppBuilder,
     plugin::{ComponentRegistry, MutableComponentRegistry as _},
+    extractor::Component,
 };
-use spring_apalis::apalis_redis::RedisStorage;
-use spring_apalis::{
+use summer_apalis::apalis_redis::RedisStorage;
+use summer_apalis::{
     apalis::prelude::Monitor,
     apalis_board::axum::{
         framework::{ApiBuilder, RegisterRoute as _},
         sse::{TracingBroadcaster, TracingSubscriber},
     },
 };
-use spring_apalis::{apalis::prelude::*, apalis_board::axum::ui::ServeUI};
-use spring_job::extractor::{Component, Data};
-use spring_redis::Redis;
-use spring_web::{
+use summer_apalis::{apalis::prelude::*, apalis_board::axum::ui::ServeUI};
+use summer_job::extractor::Data;
+use summer_redis::Redis;
+use summer_web::{
     axum::{Extension, Router},
     WebConfigurator as _,
 };

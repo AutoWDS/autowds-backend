@@ -15,15 +15,15 @@ use crate::{
 use anyhow::Context;
 use axum_valid::Valid;
 use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait};
-use spring_mail::Mailer;
-use spring_redis::Redis;
-use spring_sea_orm::DbConn;
-use spring_web::{
+use summer_mail::Mailer;
+use summer_redis::Redis;
+use summer_sea_orm::DbConn;
+use summer_web::{
     axum::Json,
     error::{KnownWebError, Result},
     extractor::Component,
 };
-use spring_web::{extractor::Config, get_api, patch_api, post_api};
+use summer_web::{extractor::Config, get_api, patch_api, post_api};
 
 /// # 注册
 /// @tag user

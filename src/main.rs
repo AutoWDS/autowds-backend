@@ -5,13 +5,13 @@ mod task;
 mod utils;
 mod views;
 
-use spring::App;
-use spring_apalis::{ApalisConfigurator, ApalisPlugin};
-use spring_job::JobPlugin;
-use spring_mail::MailPlugin;
-use spring_redis::RedisPlugin;
-use spring_sea_orm::SeaOrmPlugin;
-use spring_web::{WebConfigurator, WebPlugin};
+use summer::App;
+use summer_apalis::{ApalisConfigurator, ApalisPlugin};
+use summer_job::JobPlugin;
+use summer_mail::MailPlugin;
+use summer_redis::RedisPlugin;
+use summer_sea_orm::SeaOrmPlugin;
+use summer_web::{WebConfigurator, WebPlugin};
 use utils::pay_plugin::PayPlugin;
 
 #[tokio::main]

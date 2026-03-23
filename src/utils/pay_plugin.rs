@@ -1,7 +1,7 @@
 use crate::config::pay::PayConfig;
 use alipay_sdk_rust::pay::{PayClient, Payer};
 use derive_more::derive::Deref;
-use spring::{
+use summer::{
     app::AppBuilder,
     async_trait,
     config::ConfigRegistry,

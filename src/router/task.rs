@@ -6,19 +6,20 @@ use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq}
 use anyhow::Context;
 use axum_valid::Valid;
 use itertools::Itertools;
+use chrono::Local;
 use sea_orm::{
-    sqlx::types::chrono::Local, ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, PaginatorTrait,
+    ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, PaginatorTrait,
     QueryFilter, Set,
 };
 use serde_json::Value;
-use spring_job::job::Job;
-use spring_job::JobScheduler;
-use spring_sea_orm::pagination::{Page, Pagination, PaginationExt};
-use spring_web::axum::response::IntoResponse;
-use spring_web::axum::Json;
-use spring_web::error::{KnownWebError, Result};
-use spring_web::extractor::{AppRef, Component, Path, Query};
-use spring_web::{delete_api, get_api, patch_api, post_api, put_api};
+use summer_job::job::Job;
+use summer_job::JobScheduler;
+use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use summer_web::axum::response::IntoResponse;
+use summer_web::axum::Json;
+use summer_web::error::{KnownWebError, Result};
+use summer_web::extractor::{AppRef, Component, Path, Query};
+use summer_web::{delete_api, get_api, patch_api, post_api, put_api};
 
 /// 检查用户任务数量限制
 async fn check_task_limit(
@@ -168,7 +169,7 @@ async fn add_batch_task(
         .exec(&db)
         .await
         .context("batch save scraper task failed")?;
-    Ok(Json(r.last_insert_id))
+    Ok(Json(r.last_insert_id.unwrap_or_default()))
 }
 
 /// # 获取任务详情

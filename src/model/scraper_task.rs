@@ -2,13 +2,14 @@ pub use super::_entities::scraper_task::*;
 
 use anyhow::Context;
 use schemars::JsonSchema;
+use chrono::Local;
 use sea_orm::{
-    sqlx::types::chrono::Local, ActiveModelBehavior, ConnectionTrait, DbConn, DbErr, EntityTrait,
+    ActiveModelBehavior, ConnectionTrait, DbConn, DbErr, EntityTrait,
     FromJsonQueryResult, Set,
 };
 use serde::{Deserialize, Serialize};
-use spring::async_trait;
-use spring_web::error::{KnownWebError, WebError};
+use summer::async_trait;
+use summer_web::error::{KnownWebError, WebError};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "UPPERCASE")]

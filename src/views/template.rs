@@ -3,7 +3,7 @@ use crate::model::{
     task_template,
 };
 use schemars::JsonSchema;
-use sea_orm::{prelude::DateTime, sea_query::IntoCondition, ColumnTrait, Condition};
+use sea_orm::{prelude::DateTime, ColumnTrait, Condition};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::NoneAsEmptyString;
@@ -28,16 +28,16 @@ pub struct TemplateQuery {
     pub edition: Option<ProductEdition>,
 }
 
-impl IntoCondition for TemplateQuery {
-    fn into_condition(self) -> sea_orm::Condition {
+impl From<TemplateQuery> for Condition {
+    fn from(query: TemplateQuery) -> Self {
         let mut c = Condition::all();
-        if let Some(name) = self.name {
+        if let Some(name) = query.name {
             c = c.add(task_template::Column::Name.starts_with(name));
         }
-        if let Some(topic) = self.topic {
+        if let Some(topic) = query.topic {
             c = c.add(task_template::Column::Topic.eq(topic));
         }
-        if let Some(edition) = self.edition {
+        if let Some(edition) = query.edition {
             c = c.add(task_template::Column::Edition.eq(edition));
         }
         c

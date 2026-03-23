@@ -1,7 +1,7 @@
 use crate::model::sea_orm_active_enums::OrderLevel;
 use anyhow::Result;
 use sea_orm::DbConn;
-use spring::{plugin::service::Service, tracing};
+use summer::{plugin::service::Service, tracing};
 
 #[derive(Clone, Service)]
 pub struct UserService {

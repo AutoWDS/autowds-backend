@@ -1,7 +1,8 @@
 pub use super::_entities::account_user::*;
 
-use sea_orm::{sqlx::types::chrono::Local, ActiveModelBehavior, ConnectionTrait, DbErr, Set};
-use spring::async_trait;
+use chrono::Local;
+use sea_orm::{ActiveModelBehavior, ConnectionTrait, DbErr, Set};
+use summer::async_trait;
 
 #[async_trait]
 impl ActiveModelBehavior for ActiveModel {

@@ -1,7 +1,7 @@
 use crate::utils::rand;
 use anyhow::Context;
-use spring_redis::{redis::AsyncCommands, Redis};
-use spring_web::error::Result;
+use summer_redis::{redis::AsyncCommands, Redis};
+use summer_web::error::Result;
 
 pub async fn get_validate_code(redis: &mut Redis, email: &str) -> Result<Option<String>> {
     let key = validate_redis_key(email);

@@ -1,9 +1,10 @@
 pub use super::_entities::task_template::*;
 
+use chrono::Local;
 use sea_orm::{
-    sqlx::types::chrono::Local, ActiveModelBehavior, ConnectionTrait, DbErr, Set, Statement,
+    ActiveModelBehavior, ConnectionTrait, DbErr, Set, Statement,
 };
-use spring::async_trait;
+use summer::async_trait;
 
 #[async_trait]
 impl ActiveModelBehavior for ActiveModel {
@@ -25,7 +26,7 @@ impl Entity {
         C: ConnectionTrait,
     {
         let result = db
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 sea_orm::DatabaseBackend::Postgres,
                 "update task_template set fav_count=fav_count+1 where id=$1",
                 [template_id.into()],
@@ -39,7 +40,7 @@ impl Entity {
         C: ConnectionTrait,
     {
         let result = db
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 sea_orm::DatabaseBackend::Postgres,
                 "update task_template set fav_count=fav_count-1 where id=$1",
                 [template_id.into()],

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use askama::Template;
-use spring_mail::{header::ContentType, AsyncTransport, Mailer, Message};
-use spring_web::error::Result;
+use summer_mail::{header::ContentType, AsyncTransport, Mailer, Message};
+use summer_web::error::Result;
 
 pub async fn send_mail<T: Template>(
     mailer: &Mailer,

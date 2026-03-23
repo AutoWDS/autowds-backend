@@ -4,10 +4,10 @@ use crate::views::statistics::{
 };
 use anyhow::Context;
 use sea_orm::{ConnectionTrait, DbConn, Statement};
-use spring_web::axum::Json;
-use spring_web::error::Result;
-use spring_web::extractor::Component;
-use spring_web::get_api;
+use summer_web::axum::Json;
+use summer_web::error::Result;
+use summer_web::extractor::Component;
+use summer_web::get_api;
 
 /// # 获取统计信息
 /// @tag statistics
@@ -21,7 +21,7 @@ async fn get_statistics(
     // 任务统计 - 使用SQL查询
     let total_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE user_id = $1";
     let total: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             total_sql,
             [user_id.into()],
@@ -33,7 +33,7 @@ async fn get_statistics(
 
     let undeployed_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE user_id = $1 AND data IS NULL";
     let undeployed: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             undeployed_sql,
             [user_id.into()],
@@ -45,7 +45,7 @@ async fn get_statistics(
 
     let scheduled_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE user_id = $1 AND data IS NOT NULL AND deleted = false";
     let scheduled: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             scheduled_sql,
             [user_id.into()],
@@ -57,7 +57,7 @@ async fn get_statistics(
 
     let completed_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE user_id = $1 AND deleted = true";
     let completed: i64 = db
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             completed_sql,
             [user_id.into()],
@@ -127,11 +127,11 @@ async fn get_time_series_data(db: &DbConn, user_id: i64) -> anyhow::Result<Vec<T
         [user_id.into()],
     );
 
-    let result = db.query_all(stmt).await.context("查询时间序列数据失败")?;
+    let result = db.query_all_raw(stmt).await.context("查询时间序列数据失败")?;
     
     let mut time_series = Vec::new();
     for row in result {
-        let date: sea_orm::sqlx::types::chrono::NaiveDate = row.try_get("", "date")?;
+        let date: chrono::NaiveDate = row.try_get("", "date")?;
         let count: i64 = row.try_get("", "count")?;
         
         time_series.push(TimeSeriesData {
@@ -141,7 +141,7 @@ async fn get_time_series_data(db: &DbConn, user_id: i64) -> anyhow::Result<Vec<T
     }
 
     // 如果数据不足30天，填充缺失的日期为0
-    use sea_orm::sqlx::types::chrono::Local;
+    use chrono::Local;
     let today = Local::now().date_naive();
     let mut filled_series = Vec::new();
     for i in 0..30 {

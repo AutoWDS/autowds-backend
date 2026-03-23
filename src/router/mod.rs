@@ -8,8 +8,8 @@ mod token;
 mod user;
 
 use axum_client_ip::ClientIpSource;
-use spring::config::env::Env;
-use spring_web::{
+use summer::config::env::Env;
+use summer_web::{
     aide::OperationInput,
     axum::{
         body,
@@ -25,7 +25,7 @@ pub fn router() -> Router {
     let env = Env::init();
     Router::new().nest(
         "/api",
-        spring_web::handler::auto_router()
+        summer_web::handler::auto_router()
             .nest("/pay", pay::router().into())
             .layer(middleware::from_fn(problem_middleware))
             .layer(match env {

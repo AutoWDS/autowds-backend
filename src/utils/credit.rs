@@ -3,7 +3,7 @@ use crate::model::{
 };
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, EntityTrait, Set, TransactionTrait,
+    ActiveModelTrait, ConnectionTrait, EntityTrait, Set, TransactionTrait, TransactionSession,
 };
 
 /// 积分服务
