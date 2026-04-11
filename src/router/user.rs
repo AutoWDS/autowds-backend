@@ -8,8 +8,12 @@ use crate::{
         mail,
         validate_code::{gen_validate_code, get_validate_code},
     },
-    views::user::{
-        CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp, ValidateCodeEmailTemplate,
+    views::{
+        token::UserToken,
+        user::{
+            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp,
+            ValidateCodeEmailTemplate,
+        },
     },
 };
 use anyhow::Context;
@@ -33,7 +37,7 @@ async fn register(
     Component(db): Component<DbConn>,
     ClientIp(client_ip): ClientIp,
     Valid(Json(body)): Valid<Json<RegisterReq>>,
-) -> Result<Json<UserResp>> {
+) -> Result<Json<UserToken>> {
     let code = get_validate_code(&mut redis, &body.email).await?;
 
     match code {
@@ -120,7 +124,16 @@ async fn register(
     // 提交事务
     txn.commit().await.context("提交事务失败")?;
 
-    Ok(Json(user.into()))
+    let claims = Claims::new(user.clone());
+    let token = jwt::encode(claims)?;
+    Ok(Json(UserToken {
+        id: user.id,
+        is_admin: user.id <= 1,
+        name: user.name,
+        email: user.email,
+        edition: user.edition,
+        token,
+    }))
 }
 
 /// # 获取当前用户信息
