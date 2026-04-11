@@ -17,7 +17,13 @@
         <p>{{tip}}</p>
     </div>
     <div style="text-align:center">
-        <p>{{code}}</p>
+        <div role="button" tabindex="0" data-code="{{ code }}"
+            onclick="(function(b){var c=b.dataset.code,t=b.querySelector('.vc-text');function sel(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);}if(navigator.clipboard){if(navigator.clipboard.writeText){navigator.clipboard.writeText(c).then(function(){b.style.boxShadow='0 0 0 3px #1296DB';setTimeout(function(){b.style.boxShadow='';},280);}).catch(sel);}else{sel();}}else{sel();}})(this)"
+            style="display:inline-block;padding:16px 28px;margin:8px 0;background:#f5f7fa;border:2px dashed #1296DB;border-radius:8px;cursor:pointer;user-select:all;-webkit-user-select:all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:28px;font-weight:600;color:#1296DB;letter-spacing:4px;line-height:1.4;"
+            title="点击复制验证码">
+            <span class="vc-text">{{ code }}</span>
+        </div>
+        <p style="margin:12px 0 0;font-size:13px;color:#666;">点击上方验证码可一键复制；若无效请长按选中或手动复制。</p>
     </div>
 </body>
 
