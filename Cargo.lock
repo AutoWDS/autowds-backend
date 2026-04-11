@@ -6021,9 +6021,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "summer"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e93d8d02bce32932945488a814bb2a4b4ee926b7411e0055b25a9759c26a4157"
+checksum = "85ec3ba0b766c600510e6fb056cdb2541247aae0e0fd58c38a63b9d9b9c4342f"
 dependencies = [
  "anyhow",
  "async-trait",

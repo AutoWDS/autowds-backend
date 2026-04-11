@@ -205,7 +205,7 @@ async fn reset_password(
     Component(db): Component<DbConn>,
     ClientIp(client_ip): ClientIp,
     Valid(Json(req)): Valid<Json<ResetPasswdReq>>,
-) -> Result<String> {
+) -> Result<Json<UserToken>> {
     let code = get_validate_code(&mut redis, &req.email)
         .await?
         .ok_or_else(|| KnownWebError::bad_request("验证码已过期"))?;
@@ -231,9 +231,17 @@ async fn reset_password(
     .await
     .with_context(|| format!("user#{} change password failed", u.id))?;
 
-    let claims = Claims::new(u);
+    let claims = Claims::new(u.clone());
+    let token = jwt::encode(claims)?;
 
-    Ok(jwt::encode(claims)?)
+    Ok(Json(UserToken {
+        id: u.id,
+        is_admin: u.id <= 1,
+        name: u.name,
+        email: u.email,
+        edition: u.edition,
+        token,
+    }))
 }
 
 /// # 修改用户名
