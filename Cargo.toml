@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
-summer = "0.5.0"
+summer = "0.5.1"
 summer-web = { version = "0.5.0", features = ["openapi", "openapi-scalar"] }
 summer-mail = "0.5.0"
 summer-redis = "0.5.0"
