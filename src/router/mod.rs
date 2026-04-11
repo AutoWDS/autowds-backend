@@ -18,12 +18,13 @@ use summer_web::{
         response::{IntoResponse, Response},
     },
     extractor::{FromRequestParts, Request},
+    middleware::services::{ServeDir, ServeFile},
     Router,
 };
 
 pub fn router() -> Router {
     let env = Env::init();
-    Router::new().nest(
+    let router = Router::new().nest(
         "/api",
         summer_web::handler::auto_router()
             .nest("/pay", pay::router().into())
@@ -32,7 +33,34 @@ pub fn router() -> Router {
                 Env::Dev => ClientIpSource::ConnectInfo.into_extension(),
                 _ => ClientIpSource::RightmostXForwardedFor.into_extension(),
             }),
-    )
+    );
+    match env {
+        Env::Dev => {
+            let home_dir =
+                ServeDir::new("site/out").not_found_service(ServeFile::new("site/out/index.html"));
+            let cloud_dir = ServeDir::new("frontend/build")
+                .not_found_service(ServeFile::new("frontend/build/index.html"));
+            let admin_dir = ServeDir::new("backend/dist")
+                .not_found_service(ServeFile::new("backend/dist/index.html"));
+            router
+                .nest_service("/cloud/", cloud_dir)
+                .nest_service("/admin/", admin_dir)
+                .fallback_service(home_dir)
+        }
+        _ => {
+            // 看Dockerfile最终构建所放置的路径
+            let home_dir =
+                ServeDir::new("static").not_found_service(ServeFile::new("static/index.html"));
+            let cloud_dir = ServeDir::new("static/cloud")
+                .not_found_service(ServeFile::new("static/cloud/index.html"));
+            let admin_dir = ServeDir::new("static/admin")
+                .not_found_service(ServeFile::new("static/admin/index.html"));
+            router
+                .nest_service("/cloud/", cloud_dir)
+                .nest_service("/admin/", admin_dir)
+                .fallback_service(home_dir)
+        }
+    }
 }
 
 async fn problem_middleware(request: Request, next: Next) -> Response {
