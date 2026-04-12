@@ -1,6 +1,7 @@
 mod config;
 mod model;
 mod router;
+mod service;
 mod task;
 mod utils;
 mod views;

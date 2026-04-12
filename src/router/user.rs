@@ -2,8 +2,8 @@ use crate::{
     config::mail::Email,
     model::{account_user, prelude::AccountUser, sea_orm_active_enums::{ProductEdition, CreditOperation}},
     router::ClientIp,
+    service::credit::CreditService,
     utils::{
-        credit::CreditService,
         jwt::{self, Claims},
         mail,
         validate_code::{gen_validate_code, get_validate_code, ValidateCodePurpose},

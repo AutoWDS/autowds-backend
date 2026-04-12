@@ -3,7 +3,8 @@ use crate::{
         account_user, prelude::*, scraper_task, sea_orm_active_enums::{ProductEdition, CreditOperation},
         task_template,
     },
-    utils::{jwt::AdminClaims, credit::CreditService},
+    service::credit::CreditService,
+    utils::jwt::AdminClaims,
     views::admin::*,
 };
 use anyhow::Context;
