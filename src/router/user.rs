@@ -6,7 +6,7 @@ use crate::{
         credit::CreditService,
         jwt::{self, Claims},
         mail,
-        validate_code::{gen_validate_code, get_validate_code},
+        validate_code::{gen_validate_code, get_validate_code, ValidateCodePurpose},
     },
     views::{
         token::UserToken,
@@ -38,7 +38,7 @@ async fn register(
     ClientIp(client_ip): ClientIp,
     Valid(Json(body)): Valid<Json<RegisterReq>>,
 ) -> Result<Json<UserToken>> {
-    let code = get_validate_code(&mut redis, &body.email).await?;
+    let code = get_validate_code(&mut redis, &body.email, ValidateCodePurpose::Register).await?;
 
     match code {
         None => return Err(KnownWebError::bad_request("验证码已过期"))?,
@@ -162,7 +162,7 @@ async fn register_validate_code(
     Config(email): Config<Email>,
     Valid(Json(body)): Valid<Json<SendEmailReq>>,
 ) -> Result<Json<bool>> {
-    let code = gen_validate_code(&mut redis, &body.email).await?;
+    let code = gen_validate_code(&mut redis, &body.email, ValidateCodePurpose::Register).await?;
 
     let template = ValidateCodeEmailTemplate {
         tip: "欢迎您注册我们的服务，您的注册验证码(5分钟内有效)是：",
@@ -184,7 +184,7 @@ async fn reset_validate_code(
     Config(email): Config<Email>,
     Valid(Json(body)): Valid<Json<SendEmailReq>>,
 ) -> Result<Json<bool>> {
-    let code = gen_validate_code(&mut redis, &body.email).await?;
+    let code = gen_validate_code(&mut redis, &body.email, ValidateCodePurpose::ResetPassword).await?;
 
     let template = ValidateCodeEmailTemplate {
         tip: "请确认您是否需要重置密码，重置密码请在系统中输入以下验证码(5分钟内有效)：",
@@ -206,7 +206,7 @@ async fn reset_password(
     ClientIp(client_ip): ClientIp,
     Valid(Json(req)): Valid<Json<ResetPasswdReq>>,
 ) -> Result<Json<UserToken>> {
-    let code = get_validate_code(&mut redis, &req.email)
+    let code = get_validate_code(&mut redis, &req.email, ValidateCodePurpose::ResetPassword)
         .await?
         .ok_or_else(|| KnownWebError::bad_request("验证码已过期"))?;
 
