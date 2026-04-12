@@ -5,6 +5,7 @@ use crate::model::{
 use schemars::JsonSchema;
 use sea_orm::{prelude::DateTime, ColumnTrait, Condition};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with::serde_as;
 use serde_with::NoneAsEmptyString;
 use validator::Validate;
@@ -58,6 +59,8 @@ pub struct ListTemplateResp {
     name: String,
     detail: String,
     img: String,
+    /// 采集规则（列表接口需返回，供扩展端「应用模板」创建任务）
+    rule: Value,
     like: bool,
 }
 
@@ -74,6 +77,7 @@ impl From<task_template::Model> for ListTemplateResp {
             name: value.name,
             detail: value.detail,
             img: value.img,
+            rule: value.rule,
             like: false,
         }
     }
