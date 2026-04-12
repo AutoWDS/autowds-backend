@@ -5,11 +5,10 @@ use crate::utils::jwt::Claims;
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
 use axum_valid::Valid;
-use itertools::Itertools;
 use chrono::Local;
+use itertools::Itertools;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, PaginatorTrait,
-    QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, PaginatorTrait, QueryFilter, Set,
 };
 use serde_json::Value;
 use summer_job::job::Job;
@@ -139,11 +138,11 @@ async fn add_batch_task(
     let limit = match user.edition {
         ProductEdition::L0 => 3,
         ProductEdition::L1 => 10,
-        ProductEdition::L2 => 50,
-        ProductEdition::L3 => 200,
+        ProductEdition::L2 => i32::MAX,
+        ProductEdition::L3 => i32::MAX,
     };
 
-    if current_count + batch.len() as u64 > limit {
+    if current_count + batch.len() as u64 > limit as u64 {
         let message = match user.edition {
             ProductEdition::L0 => "免费用户最多只能创建3个任务，请升级到付费版本",
             _ => "批量添加将超过当前版本的任务数量上限",
