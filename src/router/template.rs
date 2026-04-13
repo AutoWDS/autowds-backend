@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::Context;
 use itertools::Itertools;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, Set, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, QueryOrder, Set, TransactionTrait};
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use summer_web::{
     axum::Json,
@@ -29,8 +29,10 @@ async fn query(
     Query(query): Query<TemplateQuery>,
     pagination: Pagination,
 ) -> Result<Json<Page<ListTemplateResp>>> {
+    let sort = query.sort;
     let page = TaskTemplate::find()
         .filter(query)
+        .order_by_desc(sort.column())
         .page(&db, &pagination)
         .await
         .context("query task template page failed")?;

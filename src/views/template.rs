@@ -10,6 +10,26 @@ use serde_with::serde_as;
 use serde_with::NoneAsEmptyString;
 use validator::Validate;
 
+/// 模板列表允许的排序字段（与 ORM `Column` 解耦，便于 OpenAPI 与校验）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum TemplateListSort {
+    /// 按更新时间
+    #[default]
+    Modified,
+    /// 按收藏数（热度）
+    FavCount,
+}
+
+impl TemplateListSort {
+    pub fn column(self) -> task_template::Column {
+        match self {
+            Self::Modified => task_template::Column::Modified,
+            Self::FavCount => task_template::Column::FavCount,
+        }
+    }
+}
+
 /// # 模板查询
 #[serde_as]
 #[derive(Deserialize, Validate, JsonSchema)]
@@ -27,6 +47,9 @@ pub struct TemplateQuery {
     #[serde(default)]
     #[schemars(with = "Option<ProductEdition>")]
     pub edition: Option<ProductEdition>,
+    /// # 排序（查询参数 `sort`，与扩展端一致）
+    #[serde(default)]
+    pub sort: TemplateListSort,
 }
 
 impl From<TemplateQuery> for Condition {
