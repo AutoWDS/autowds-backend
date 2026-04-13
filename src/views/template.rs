@@ -61,6 +61,8 @@ pub struct ListTemplateResp {
     img: String,
     /// 采集规则（列表接口需返回，供扩展端「应用模板」创建任务）
     rule: Value,
+    /// 起始 URL 中 `{参数名}` 占位符列表，与 rule 内 start 节点 url 对应
+    params: Option<Value>,
     like: bool,
 }
 
@@ -78,6 +80,7 @@ impl From<task_template::Model> for ListTemplateResp {
             detail: value.detail,
             img: value.img,
             rule: value.rule,
+            params: value.params,
             like: false,
         }
     }
