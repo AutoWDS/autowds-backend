@@ -15,6 +15,7 @@ create table if not exists account_user (
     credits int not null default 100,
     invite_code varchar(20) unique not null,
     invited_by bigint null,
+    email_subscribed boolean not null default true,
     unique (email)
 );
 --- template

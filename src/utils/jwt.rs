@@ -213,3 +213,47 @@ pub fn decode(token: &str) -> Result<Claims> {
         })?;
     Ok(token_data.claims)
 }
+
+/// 营销邮件退订 JWT 载荷（与用户登录 JWT 分离，避免混用）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarketingUnsubscribeClaims {
+    pub uid: i64,
+    pub purpose: String,
+    exp: u64,
+}
+
+const MARKETING_UNSUB_PURPOSE: &str = "marketing_unsub";
+
+impl MarketingUnsubscribeClaims {
+    pub fn new(uid: i64) -> Self {
+        let now = jsonwebtoken::get_current_timestamp();
+        Self {
+            uid,
+            purpose: MARKETING_UNSUB_PURPOSE.to_string(),
+            exp: now + 10 * 365 * 24 * 60 * 60,
+        }
+    }
+}
+
+pub fn encode_marketing_unsubscribe(uid: i64) -> Result<String> {
+    let claims = MarketingUnsubscribeClaims::new(uid);
+    let header = Header::new(Algorithm::RS256);
+    jsonwebtoken::encode::<MarketingUnsubscribeClaims>(&header, &claims, &ENCODE_KEY)
+        .map_err(|_| KnownWebError::internal_server_error("Token created error"))
+}
+
+pub fn decode_marketing_unsubscribe(token: &str) -> Result<MarketingUnsubscribeClaims> {
+    let validation = Validation::new(Algorithm::RS256);
+    let token_data =
+        jsonwebtoken::decode::<MarketingUnsubscribeClaims>(token, &DECODE_KEY, &validation).map_err(
+            |e| {
+                tracing::error!("{:?}", e);
+                KnownWebError::bad_request("退订链接无效或已过期")
+            },
+        )?;
+    let c = token_data.claims;
+    if c.purpose != MARKETING_UNSUB_PURPOSE {
+        return Err(KnownWebError::bad_request("退订链接无效").into());
+    }
+    Ok(c)
+}

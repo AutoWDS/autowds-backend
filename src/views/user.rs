@@ -57,6 +57,11 @@ pub struct ResetPasswdReq {
     pub validate_code: String,
 }
 
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct UnsubscribeMarketingQuery {
+    pub token: String,
+}
+
 #[derive(Debug, Validate, Deserialize, JsonSchema)]
 pub struct SendEmailReq {
     #[validate(

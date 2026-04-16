@@ -21,6 +21,7 @@ pub struct Model {
     pub credits: i32,
     pub invite_code: String,
     pub invited_by: Option<i64>,
+    pub email_subscribed: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

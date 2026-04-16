@@ -46,6 +46,7 @@ wechat-pay-rust-sdk = { version = "0.2", features = ["async"] }
 derive_more = { version = "1.0", features = ["deref"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde_urlencoded = "0.7"
+urlencoding = "2.1"
 
 [patch.crates-io]
 axum-valid = { git = "https://github.com/holmofy/axum-valid", branch = "patch-1" }

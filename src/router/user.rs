@@ -11,21 +11,24 @@ use crate::{
     views::{
         token::UserToken,
         user::{
-            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UserResp,
-            ValidateCodeEmailTemplate,
+            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UnsubscribeMarketingQuery,
+            UserResp, ValidateCodeEmailTemplate,
         },
     },
 };
 use anyhow::Context;
 use axum_valid::Valid;
-use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
+    Set, TransactionTrait,
+};
 use summer_mail::Mailer;
 use summer_redis::Redis;
 use summer_sea_orm::DbConn;
 use summer_web::{
-    axum::Json,
+    axum::{response::Html, Json},
     error::{KnownWebError, Result},
-    extractor::Component,
+    extractor::{Component, Query},
 };
 use summer_web::{extractor::Config, get_api, patch_api, post_api};
 
@@ -90,6 +93,7 @@ async fn register(
         credits: Set(100), // 默认100积分
         invite_code: Set("TEMP".to_string()), // 临时邀请码，获取ID后立即更新
         invited_by: Set(invited_by),
+        email_subscribed: Set(true),
         ..Default::default()
     }
     .insert(&txn)
@@ -275,6 +279,36 @@ async fn set_name(
 
     Ok(Json(true))
 }
+
+/// # 营销邮件退订（公开链接，无需登录）
+/// @tag user
+#[get_api("/user/unsubscribe-marketing")]
+async fn unsubscribe_marketing(
+    Component(db): Component<DbConn>,
+    Query(q): Query<UnsubscribeMarketingQuery>,
+) -> Result<Html<String>> {
+    let claims = jwt::decode_marketing_unsubscribe(&q.token)?;
+    let uid = claims.uid;
+    let user = AccountUser::find_by_id(uid)
+        .one(&db)
+        .await
+        .context("find user failed")?
+        .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    account_user::ActiveModel {
+        id: Set(user.id),
+        email_subscribed: Set(false),
+        ..Default::default()
+    }
+    .update(&db)
+    .await
+    .context("退订更新失败")?;
+
+    Ok(Html(
+        "<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><title>退订成功</title></head><body><p>您已成功退订营销邮件。</p></body></html>".to_string(),
+    ))
+}
+
 /// # 数据导出（扣减积分）
 /// @tag user
 #[post_api("/user/export")]

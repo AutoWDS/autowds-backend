@@ -1,10 +1,11 @@
 use crate::{
+    config::mail::Email,
     model::{
         account_user, prelude::*, scraper_task, sea_orm_active_enums::{ProductEdition, CreditOperation},
         task_template,
     },
     service::credit::CreditService,
-    utils::jwt::AdminClaims,
+    utils::{jwt::{self, AdminClaims}, mail},
     views::admin::*,
 };
 use anyhow::Context;
@@ -13,11 +14,13 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, Set,
 };
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use summer_mail::Mailer;
+use std::collections::HashSet;
 use summer_web::{
     axum::Json,
     delete, get,
     error::{KnownWebError, Result},
-    extractor::{Component, Path, Query},
+    extractor::{Component, Config, Path, Query},
     post, put,
 };
 
@@ -82,6 +85,7 @@ async fn create_user(
         credits: Set(100), // 默认100积分
         invite_code: Set(temp_invite_code),
         invited_by: Set(None),
+        email_subscribed: Set(true),
         ..Default::default()
     }
     .insert(&db)
@@ -123,17 +127,21 @@ async fn update_user(
         .context("find user failed")?
         .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
 
-    let user = account_user::ActiveModel {
+    let mut am = account_user::ActiveModel {
         id: Set(user.id),
         name: Set(req.username),
         email: Set(req.email),
         locked: Set(req.locked.unwrap_or(user.locked)),
         edition: Set(req.edition.unwrap_or(user.edition)),
         ..Default::default()
+    };
+    if let Some(v) = req.email_subscribed {
+        am.email_subscribed = Set(v);
     }
-    .update(&db)
-    .await
-    .context("update user failed")?;
+    let user = am
+        .update(&db)
+        .await
+        .context("update user failed")?;
 
     Ok(Json(UserResp::from(user)))
 }
@@ -260,6 +268,79 @@ async fn update_user_edition(
     .context("记录版本等级变更日志失败")?;
 
     Ok(Json(UserResp::from(updated_user)))
+}
+
+/// 发送营销邮件（HTML，仅发给仍订阅的用户）
+#[post("/admin/user/send-marketing-email")]
+async fn send_marketing_email(
+    _admin: AdminClaims,
+    Component(db): Component<DbConn>,
+    Component(mailer): Component<Mailer>,
+    Config(email): Config<Email>,
+    Valid(Json(req)): Valid<Json<SendMarketingEmailReq>>,
+) -> Result<Json<SendMarketingEmailResp>> {
+    let base = email.base_url_trimmed();
+    if base.is_empty() {
+        return Err(KnownWebError::bad_request(
+            "未配置 email.public_base_url（环境变量 PUBLIC_BASE_URL），无法生成退订链接",
+        ))?;
+    }
+
+    let mut user_ids = req.user_ids.clone();
+    user_ids.sort_unstable();
+    user_ids.dedup();
+
+    let requested: HashSet<i64> = user_ids.iter().copied().collect();
+
+    let rows = AccountUser::find()
+        .filter(account_user::Column::Id.is_in(user_ids))
+        .all(&db)
+        .await
+        .context("query users failed")?;
+
+    let found: HashSet<i64> = rows.iter().map(|u| u.id).collect();
+    let not_found = requested.difference(&found).count();
+
+    let from = email.from.as_str();
+    let mut sent = 0usize;
+    let mut skipped_unsubscribed = 0usize;
+    let mut failed: Vec<String> = Vec::new();
+
+    for u in rows {
+        if !u.email_subscribed {
+            skipped_unsubscribed += 1;
+            continue;
+        }
+        let token = jwt::encode_marketing_unsubscribe(u.id)?;
+        let unsub_url = format!(
+            "{}/api/user/unsubscribe-marketing?token={}",
+            base,
+            urlencoding::encode(token.as_str())
+        );
+        let full_html = format!(
+            concat!(
+                "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body>",
+                "{}",
+                "<hr><p style=\"font-size:12px;color:#666;\">若不想再收到此类邮件，请<a href=\"{}\">点击退订</a>。</p>",
+                "</body></html>"
+            ),
+            req.html_body,
+            unsub_url
+        );
+
+        match mail::send_html_mail(&mailer, from, &u.email, &req.subject, &full_html).await {
+            Ok(true) => sent += 1,
+            Ok(false) => failed.push(format!("{}: SMTP 未确认成功", u.email)),
+            Err(e) => failed.push(format!("{}: {}", u.email, e)),
+        }
+    }
+
+    Ok(Json(SendMarketingEmailResp {
+        sent,
+        skipped_unsubscribed,
+        not_found,
+        failed,
+    }))
 }
 
 // ==================== 任务管理接口 ====================

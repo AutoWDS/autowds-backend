@@ -21,6 +21,7 @@ pub struct UserResp {
     pub invite_code: String,
     pub invited_by: Option<i64>,
     pub edition: ProductEdition,
+    pub email_subscribed: bool,
 }
 
 impl From<account_user::Model> for UserResp {
@@ -35,6 +36,7 @@ impl From<account_user::Model> for UserResp {
             invite_code: user.invite_code,
             invited_by: user.invited_by,
             edition: user.edition,
+            email_subscribed: user.email_subscribed,
         }
     }
 }
@@ -57,6 +59,7 @@ pub struct UpdateUserReq {
     pub email: String,
     pub locked: Option<bool>,
     pub edition: Option<ProductEdition>,
+    pub email_subscribed: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -72,6 +75,24 @@ pub struct UpdateUserEditionReq {
     pub edition: ProductEdition,
     #[validate(length(min = 1, max = 200, message = "描述长度必须在1-200字符之间"))]
     pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct SendMarketingEmailReq {
+    #[validate(length(min = 1, max = 200, message = "主题长度必须在1-200字符之间"))]
+    pub subject: String,
+    #[validate(length(min = 1, max = 512_000, message = "正文过长"))]
+    pub html_body: String,
+    #[validate(length(min = 1, max = 500, message = "请选择1-500个用户"))]
+    pub user_ids: Vec<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SendMarketingEmailResp {
+    pub sent: usize,
+    pub skipped_unsubscribed: usize,
+    pub not_found: usize,
+    pub failed: Vec<String>,
 }
 
 // ==================== 任务相关 ====================

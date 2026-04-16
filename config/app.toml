@@ -14,6 +14,8 @@ auth = { user = "hff1996723@163.com", password = "${MAIL_AUTH_PASSWORD}" } # Aut
 
 [email]
 from = "hff1996723@163.com"
+# 邮件退订链接等对外 URL 前缀，需与线上访问域名一致，例如 https://autowds.example.com
+public_base_url = "${PUBLIC_BASE_URL:http://127.0.0.1:8080}"
 
 [sea-orm]
 uri = "${DATABASE_URL:postgres://postgres:xudjf23adj213@localhost:5432/autowds}"
