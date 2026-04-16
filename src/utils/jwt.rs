@@ -238,8 +238,9 @@ impl MarketingUnsubscribeClaims {
 pub fn encode_marketing_unsubscribe(uid: i64) -> Result<String> {
     let claims = MarketingUnsubscribeClaims::new(uid);
     let header = Header::new(Algorithm::RS256);
-    jsonwebtoken::encode::<MarketingUnsubscribeClaims>(&header, &claims, &ENCODE_KEY)
-        .map_err(|_| KnownWebError::internal_server_error("Token created error"))
+    let token = jsonwebtoken::encode::<MarketingUnsubscribeClaims>(&header, &claims, &ENCODE_KEY)
+        .map_err(|_| KnownWebError::internal_server_error("Token created error"))?;
+    Ok(token)
 }
 
 pub fn decode_marketing_unsubscribe(token: &str) -> Result<MarketingUnsubscribeClaims> {
