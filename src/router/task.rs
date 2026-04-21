@@ -34,17 +34,14 @@ async fn check_task_limit(
         .context("count user tasks failed")?;
 
     let limit = match user_edition {
-        None => 1,                       // 未登录用户限制1个任务
-        Some(ProductEdition::L0) => 3,   // L0用户限制3个任务
-        Some(ProductEdition::L1) => 10,  // L1用户限制10个任务
-        Some(ProductEdition::L2) => 50,  // L2用户限制50个任务
-        Some(ProductEdition::L3) => 200, // L3用户限制200个任务
+        None => 1, // 未登录用户限制1个任务
+        Some(ref edition) => edition.task_limit(),
     };
 
     if current_count >= limit {
         let message = match user_edition {
             None => "未登录用户最多只能创建1个任务，请先登录",
-            Some(ProductEdition::L0) => "免费用户最多只能创建3个任务，请升级到付费版本",
+            Some(ProductEdition::L0) => "免费用户最多只能创建5个任务，请升级到付费版本",
             _ => "已达到当前版本的任务数量上限",
         };
         return Err(KnownWebError::forbidden(message))?;
@@ -135,16 +132,11 @@ async fn add_batch_task(
         .await
         .context("count user tasks failed")?;
 
-    let limit = match user.edition {
-        ProductEdition::L0 => 3,
-        ProductEdition::L1 => 10,
-        ProductEdition::L2 => i32::MAX,
-        ProductEdition::L3 => i32::MAX,
-    };
+    let limit = user.edition.task_limit();
 
-    if current_count + batch.len() as u64 > limit as u64 {
+    if current_count + batch.len() as u64 > limit {
         let message = match user.edition {
-            ProductEdition::L0 => "免费用户最多只能创建3个任务，请升级到付费版本",
+            ProductEdition::L0 => "免费用户最多只能创建5个任务，请升级到付费版本",
             _ => "批量添加将超过当前版本的任务数量上限",
         };
         return Err(KnownWebError::forbidden(message))?;
