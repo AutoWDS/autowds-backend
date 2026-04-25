@@ -69,7 +69,7 @@ create table scraper_task (
 create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);
 --- credit_log
 create sequence if not exists seq_credit_log;
-create type credit_operation as enum ('REGISTER', 'INVITE', 'EXPORT', 'ADMIN_ADJUST');
+create type credit_operation as enum ('REGISTER', 'INVITE', 'EXPORT', 'ADMIN_ADJUST', 'CHECK_IN');
 create table if not exists credit_log (
     id bigint primary key default nextval('seq_credit_log'),
     created timestamp not null,

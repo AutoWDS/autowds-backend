@@ -138,3 +138,10 @@ impl From<crate::model::credit_log::Model> for CreditLogResp {
         }
     }
 }
+
+/// # 签到响应
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct CheckInResp {
+    pub credits: i32,
+    pub balance: i32,
+}

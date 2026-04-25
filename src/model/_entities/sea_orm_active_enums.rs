@@ -97,6 +97,9 @@ pub enum CreditOperation {
     /// # 管理员调整
     #[sea_orm(string_value = "ADMIN_ADJUST")]
     AdminAdjust,
+    /// # 每日签到
+    #[sea_orm(string_value = "CHECK_IN")]
+    CheckIn,
 }
 
 #[derive(

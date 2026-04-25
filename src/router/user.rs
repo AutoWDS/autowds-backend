@@ -11,8 +11,8 @@ use crate::{
     views::{
         token::UserToken,
         user::{
-            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, UnsubscribeMarketingQuery,
-            UserResp, ValidateCodeEmailTemplate,
+            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, CheckInResp,
+            UnsubscribeMarketingQuery, UserResp, ValidateCodeEmailTemplate,
         },
     },
 };
@@ -309,20 +309,27 @@ async fn unsubscribe_marketing(
     ))
 }
 
+#[derive(serde::Deserialize, schemars::JsonSchema)]
+struct ExportRequest {
+    row_count: i64,
+}
+
 /// # 数据导出（扣减积分）
 /// @tag user
 #[post_api("/user/export")]
 async fn export_data(
     claims: Claims,
     Component(db): Component<DbConn>,
+    Json(body): Json<ExportRequest>,
 ) -> Result<Json<bool>> {
-    // 扣减1个积分
+    // 每1000条数据扣减1个积分，不足1000条按1个积分计算
+    let credits_to_deduct = ((body.row_count as f64 / 1000.0).ceil() as i32).max(1);
     CreditService::deduct_credits(
         &db,
         claims.uid,
-        1,
+        credits_to_deduct,
         CreditOperation::Export,
-        Some("数据导出".to_string()),
+        Some(format!("数据导出（{}条）", body.row_count)),
     )
     .await
     .map_err(|e| {
@@ -334,6 +341,60 @@ async fn export_data(
     })?;
 
     Ok(Json(true))
+}
+
+/// # 每日签到
+/// @tag user
+#[post_api("/user/check-in")]
+async fn check_in(
+    claims: Claims,
+    Component(db): Component<DbConn>,
+) -> Result<Json<CheckInResp>> {
+    use crate::model::prelude::CreditLog;
+    use crate::model::credit_log;
+    use chrono::{Local, NaiveTime};
+
+    let today_start = Local::now().date_naive().and_time(NaiveTime::MIN);
+
+    // 检查今天是否已签到
+    let has_signed = CreditLog::find()
+        .filter(credit_log::Column::UserId.eq(claims.uid))
+        .filter(credit_log::Column::Operation.eq(CreditOperation::CheckIn))
+        .filter(credit_log::Column::Created.gte(today_start))
+        .one(&db)
+        .await
+        .context("查询签到记录失败")?
+        .is_some();
+
+    if has_signed {
+        return Err(KnownWebError::bad_request("今天已经签到过了"))?;
+    }
+
+    // 获取用户信息以判断版本等级
+    let user = AccountUser::find_by_id(claims.uid)
+        .one(&db)
+        .await
+        .context("查询用户信息失败")?
+        .ok_or_else(|| KnownWebError::bad_request("用户不存在"))?;
+
+    // L0用户签到送1积分，已付费用户送10积分
+    let credits = match user.edition {
+        ProductEdition::L0 => 1,
+        _ => 10,
+    };
+
+    let balance = CreditService::add_credits(
+        &db,
+        claims.uid,
+        credits,
+        CreditOperation::CheckIn,
+        Some("每日签到".to_string()),
+        None,
+    )
+    .await
+    .context("签到加积分失败")?;
+
+    Ok(Json(CheckInResp { credits, balance }))
 }
 
 /// # 获取积分记录
