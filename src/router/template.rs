@@ -9,7 +9,11 @@ use crate::{
 };
 use anyhow::Context;
 use itertools::Itertools;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, QueryOrder, Set, TransactionTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, QueryOrder, Set,
+    TransactionTrait,
+};
+use std::collections::HashSet;
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use summer_web::{
     axum::Json,
@@ -18,7 +22,6 @@ use summer_web::{
     extractor::{Component, Path, Query},
     get_api, post_api,
 };
-use std::collections::HashSet;
 
 /// # 查询任务模板
 /// @tag template
@@ -95,14 +98,14 @@ async fn add_favorite(
     Component(db): Component<DbConn>,
 ) -> Result<Json<favorite::Model>> {
     let txn = db.begin().await.context("begin transaction failed")?;
-    
+
     let effect = TaskTemplate::incr_fav_count_by_id(&txn, template_id)
         .await
         .context("increase fav_count failed")?;
     if effect <= 0 {
         return Err(KnownWebError::not_found("模板不存在"))?;
     }
-    
+
     let fav = favorite::ActiveModel {
         user_id: Set(claims.uid),
         template_id: Set(template_id),
@@ -111,7 +114,7 @@ async fn add_favorite(
     .insert(&txn)
     .await
     .context("favorite save failed")?;
-    
+
     txn.commit().await.context("commit transaction failed")?;
     Ok(Json(fav))
 }
@@ -125,24 +128,24 @@ async fn delete_favorite(
     Component(db): Component<DbConn>,
 ) -> Result<Json<bool>> {
     let txn = db.begin().await.context("begin transaction failed")?;
-    
+
     let effect = TaskTemplate::desc_fav_count_by_id(&txn, template_id)
         .await
         .context("decrease fav_count failed")?;
     if effect <= 0 {
         return Err(KnownWebError::not_found("模板不存在"))?;
     }
-    
+
     let result = Favorite::delete_many()
         .filter(
             favorite::Column::UserId
                 .eq(claims.uid)
-                .and(favorite::Column::TemplateId.eq(template_id))
+                .and(favorite::Column::TemplateId.eq(template_id)),
         )
         .exec(&txn)
         .await
         .context("favorite delete failed")?;
-    
+
     txn.commit().await.context("commit transaction failed")?;
     Ok(Json(result.rows_affected > 0))
 }

@@ -1,11 +1,10 @@
 pub use super::_entities::scraper_task::*;
 
 use anyhow::Context;
-use schemars::JsonSchema;
 use chrono::Local;
+use schemars::JsonSchema;
 use sea_orm::{
-    ActiveModelBehavior, ConnectionTrait, DbConn, DbErr, EntityTrait,
-    FromJsonQueryResult, Set,
+    ActiveModelBehavior, ConnectionTrait, DbConn, DbErr, EntityTrait, FromJsonQueryResult, Set,
 };
 use serde::{Deserialize, Serialize};
 use summer::async_trait;

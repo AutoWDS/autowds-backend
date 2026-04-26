@@ -181,11 +181,11 @@ where
         state: &S,
     ) -> std::result::Result<Self, Self::Rejection> {
         let claims = Claims::from_request_parts(parts, state).await?;
-        
+
         if !claims.is_admin {
             return Err(KnownWebError::forbidden("需要管理员权限").into());
         }
-        
+
         Ok(Self(claims))
     }
 }
@@ -246,12 +246,11 @@ pub fn encode_marketing_unsubscribe(uid: i64) -> Result<String> {
 pub fn decode_marketing_unsubscribe(token: &str) -> Result<MarketingUnsubscribeClaims> {
     let validation = Validation::new(Algorithm::RS256);
     let token_data =
-        jsonwebtoken::decode::<MarketingUnsubscribeClaims>(token, &DECODE_KEY, &validation).map_err(
-            |e| {
+        jsonwebtoken::decode::<MarketingUnsubscribeClaims>(token, &DECODE_KEY, &validation)
+            .map_err(|e| {
                 tracing::error!("{:?}", e);
                 KnownWebError::bad_request("退订链接无效或已过期")
-            },
-        )?;
+            })?;
     let c = token_data.claims;
     if c.purpose != MARKETING_UNSUB_PURPOSE {
         return Err(KnownWebError::bad_request("退订链接无效").into());

@@ -1,27 +1,34 @@
 use crate::{
     config::mail::Email,
     model::{
-        account_user, prelude::*, scraper_task, sea_orm_active_enums::{ProductEdition, CreditOperation},
+        account_user,
+        prelude::*,
+        scraper_task,
+        sea_orm_active_enums::{CreditOperation, ProductEdition},
         task_template,
     },
     service::credit::CreditService,
-    utils::{jwt::{self, AdminClaims}, mail},
+    utils::{
+        jwt::{self, AdminClaims},
+        mail,
+    },
     views::admin::*,
 };
 use anyhow::Context;
 use axum_valid::Valid;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, ExprTrait, QueryFilter, Set,
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DbConn, EntityTrait, ExprTrait,
+    QueryFilter, Set,
 };
-use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
-use summer_mail::Mailer;
 use std::collections::HashSet;
+use summer_mail::Mailer;
+use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use summer_web::{
     axum::Json,
-    delete, get,
+    delete,
     error::{KnownWebError, Result},
     extractor::{Component, Config, Path, Query},
-    post, put,
+    get, post, put,
 };
 
 // ==================== 用户管理接口 ====================
@@ -35,7 +42,7 @@ async fn get_user_list(
     pagination: Pagination,
 ) -> Result<Json<Page<UserResp>>> {
     let mut filter = account_user::Column::Id.is_not_null();
-    
+
     if let Some(keyword) = query.keyword {
         filter = filter.and(
             account_user::Column::Name
@@ -73,7 +80,7 @@ async fn create_user(
 
     // 生成邀请码
     let temp_invite_code = "TEMP".to_string();
-    
+
     let user = account_user::ActiveModel {
         id: NotSet,
         name: Set(req.username),
@@ -138,10 +145,7 @@ async fn update_user(
     if let Some(v) = req.email_subscribed {
         am.email_subscribed = Set(v);
     }
-    let user = am
-        .update(&db)
-        .await
-        .context("update user failed")?;
+    let user = am.update(&db).await.context("update user failed")?;
 
     Ok(Json(UserResp::from(user)))
 }
@@ -240,7 +244,7 @@ async fn update_user_edition(
 
     let old_edition = user.edition.clone();
     let new_edition = req.edition.clone();
-    
+
     // 更新用户版本等级
     let updated_user = account_user::ActiveModel {
         id: Set(user.id),
@@ -257,9 +261,10 @@ async fn update_user_edition(
         user.id,
         0, // 不调整积分，只记录操作
         CreditOperation::AdminAdjust,
-        Some(format!("版本等级调整: {} -> {} ({})", 
-            old_edition.to_string(), 
-            new_edition.to_string(), 
+        Some(format!(
+            "版本等级调整: {} -> {} ({})",
+            old_edition.to_string(),
+            new_edition.to_string(),
             req.description
         )),
         None,

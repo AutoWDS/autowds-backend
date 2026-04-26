@@ -1,10 +1,9 @@
 use anyhow::Context;
-use chrono::{Days, NaiveDate};
 use chrono::Local;
+use chrono::{Days, NaiveDate};
 use sea_orm::{
-    prelude::DateTime, ActiveModelBehavior, ActiveValue::Set,
-    ColumnTrait, ConnectionTrait, DbErr, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect,
-    Statement,
+    prelude::DateTime, ActiveModelBehavior, ActiveValue::Set, ColumnTrait, ConnectionTrait, DbErr,
+    EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect, Statement,
 };
 use serde::Serialize;
 use summer::async_trait;

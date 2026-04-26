@@ -1,7 +1,7 @@
 use summer::{
     app::AppBuilder,
-    plugin::{ComponentRegistry, MutableComponentRegistry as _},
     extractor::Component,
+    plugin::{ComponentRegistry, MutableComponentRegistry as _},
 };
 use summer_apalis::apalis_redis::RedisStorage;
 use summer_apalis::{

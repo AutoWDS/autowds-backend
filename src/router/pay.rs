@@ -13,34 +13,24 @@ use sea_orm::DbConn;
 use serde::Deserialize;
 use serde_json::json;
 use summer::tracing;
-use summer_web::extractor::Component;
 use summer_web::{
     axum::{
         self,
-        extract::Query,
         http::StatusCode,
         response::{IntoResponse, Response},
-        routing::{get, post},
-        Form, Json, Router,
+        Form, Json,
     },
-    extractor::Path,
+    extractor::{Component, Path, Query},
+    get, post,
 };
 
-pub fn router() -> Router {
-    Router::new()
-        .route("/create", post(create_trade))
-        .route("/{order_id}/status", post(pay_status))
-        .route("/notify/alipay", post(alipay_callback))
-        .route("/notify/wechat", post(wechat_pay_callback))
-        .route("/stats", get(pay_stats))
-}
-
 /// 创建支付订单（表单提交）
+#[post("/pay/create")]
 async fn create_trade(
     claims: Claims,
     Component(ps): Component<PayOrderService>,
     Form(trade): Form<TradeCreateQuery>,
-) -> Result<impl IntoResponse, Response> {
+) -> Result<Json<serde_json::Value>, Response> {
     let (order_id, qrcode_url) = ps
         .create_order(claims.uid, trade.level, trade.edition, trade.pay_from)
         .await
@@ -60,6 +50,7 @@ async fn create_trade(
 }
 
 /// 查询订单支付状态
+#[post("/pay/{order_id}/status")]
 async fn pay_status(
     claims: Claims,
     Path(order_id): Path<i64>,
@@ -77,6 +68,7 @@ async fn pay_status(
 }
 
 /// 微信支付回调
+#[post("/pay/notify/wechat")]
 async fn wechat_pay_callback(
     Component(ps): Component<PayOrderService>,
     Component(us): Component<UserService>,
@@ -139,6 +131,7 @@ async fn wechat_pay_callback(
 }
 
 /// 支付宝支付回调
+#[post("/pay/notify/alipay")]
 async fn alipay_callback(
     Component(ps): Component<PayOrderService>,
     Component(us): Component<UserService>,
@@ -177,6 +170,7 @@ pub struct PayStatsQuery {
 }
 
 /// 支付统计
+#[get("/pay/stats")]
 async fn pay_stats(
     Component(pay_service): Component<PayOrderService>,
     Query(query): Query<PayStatsQuery>,

@@ -1,9 +1,7 @@
-use crate::model::{
-    account_user, credit_log, prelude::*, sea_orm_active_enums::CreditOperation,
-};
+use crate::model::{account_user, credit_log, prelude::*, sea_orm_active_enums::CreditOperation};
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, EntityTrait, Set, TransactionTrait, TransactionSession,
+    ActiveModelTrait, ConnectionTrait, EntityTrait, Set, TransactionSession, TransactionTrait,
 };
 
 /// 积分服务
@@ -102,14 +100,15 @@ impl CreditService {
     }
 
     /// Base62字符集 (0-9, A-Z, a-z)
-    const BASE62_CHARS: &'static [u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    
+    const BASE62_CHARS: &'static [u8] =
+        b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
     /// 将数字转换为Base62编码
     fn encode_base62(mut num: u64) -> String {
         if num == 0 {
             return "0".to_string();
         }
-        
+
         let mut result = Vec::new();
         while num > 0 {
             result.push(Self::BASE62_CHARS[(num % 62) as usize]);
@@ -118,33 +117,29 @@ impl CreditService {
         result.reverse();
         String::from_utf8(result).unwrap()
     }
-    
+
     /// 生成邀请码（使用Base62编码，更短更美观）
     pub fn generate_invite_code(user_id: i64) -> String {
         use rand::Rng;
         use std::time::{SystemTime, UNIX_EPOCH};
-        
+
         let mut rng = rand::rng();
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         // 组合：用户ID + 时间戳 + 随机数
         let user_part = Self::encode_base62(user_id as u64);
         let time_part = Self::encode_base62(timestamp % 238328); // 限制在4位Base62内 (62^4 = 14,776,336)
         let random_part = Self::encode_base62(rng.random_range(0..238328) as u64); // 4位Base62随机数
-        
+
         // 格式: INV + 用户ID(Base62) + 时间戳(4位Base62) + 随机数(4位Base62)
         format!("INV{}{}{}", user_part, time_part, random_part)
     }
 
     /// 处理邀请注册
-    pub async fn handle_invite_register<C>(
-        db: &C,
-        inviter_id: i64,
-        new_user_id: i64,
-    ) -> Result<()>
+    pub async fn handle_invite_register<C>(db: &C, inviter_id: i64, new_user_id: i64) -> Result<()>
     where
         C: ConnectionTrait + TransactionTrait,
     {

@@ -1,13 +1,13 @@
 use crate::config::pay::PayConfig;
 use alipay_sdk_rust::pay::{PayClient, Payer};
 use derive_more::derive::Deref;
+use std::sync::Arc;
 use summer::{
     app::AppBuilder,
     async_trait,
     config::ConfigRegistry,
     plugin::{MutableComponentRegistry, Plugin},
 };
-use std::sync::Arc;
 use wechat_pay_rust_sdk::pay::WechatPay;
 
 pub struct PayPlugin;

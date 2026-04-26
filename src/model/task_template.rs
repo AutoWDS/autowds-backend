@@ -1,9 +1,7 @@
 pub use super::_entities::task_template::*;
 
 use chrono::Local;
-use sea_orm::{
-    ActiveModelBehavior, ConnectionTrait, DbErr, Set, Statement,
-};
+use sea_orm::{ActiveModelBehavior, ConnectionTrait, DbErr, Set, Statement};
 use summer::async_trait;
 
 #[async_trait]
@@ -21,7 +19,7 @@ impl ActiveModelBehavior for ActiveModel {
 }
 
 impl Entity {
-    pub async fn incr_fav_count_by_id<C>(db: &C, template_id: i64) -> Result<u64, DbErr> 
+    pub async fn incr_fav_count_by_id<C>(db: &C, template_id: i64) -> Result<u64, DbErr>
     where
         C: ConnectionTrait,
     {

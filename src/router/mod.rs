@@ -27,7 +27,6 @@ pub fn router() -> Router {
     let router = Router::new().nest(
         "/api",
         summer_web::handler::auto_router()
-            .nest("/pay", pay::router().into())
             .layer(middleware::from_fn(problem_middleware))
             .layer(match env {
                 Env::Dev => ClientIpSource::ConnectInfo.into_extension(),

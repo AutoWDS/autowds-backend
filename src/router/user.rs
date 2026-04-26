@@ -1,6 +1,10 @@
 use crate::{
     config::mail::Email,
-    model::{account_user, prelude::AccountUser, sea_orm_active_enums::{ProductEdition, CreditOperation}},
+    model::{
+        account_user,
+        prelude::AccountUser,
+        sea_orm_active_enums::{CreditOperation, ProductEdition},
+    },
     router::ClientIp,
     service::credit::CreditService,
     utils::{
@@ -11,7 +15,7 @@ use crate::{
     views::{
         token::UserToken,
         user::{
-            CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq, CheckInResp,
+            CheckInResp, CreditLogResp, RegisterReq, ResetPasswdReq, SendEmailReq, SetNameReq,
             UnsubscribeMarketingQuery, UserResp, ValidateCodeEmailTemplate,
         },
     },
@@ -19,8 +23,8 @@ use crate::{
 use anyhow::Context;
 use axum_valid::Valid;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
-    Set, TransactionTrait,
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, EntityTrait, QueryFilter, QueryOrder,
+    QuerySelect, Set, TransactionTrait,
 };
 use summer_mail::Mailer;
 use summer_redis::Redis;
@@ -69,7 +73,7 @@ async fn register(
             .one(&db)
             .await
             .context("查询邀请人失败")?;
-        
+
         if let Some(inviter) = inviter {
             invited_by = Some(inviter.id);
         } else {
@@ -77,10 +81,9 @@ async fn register(
         }
     }
 
-
     // 使用事务确保原子性
     let txn = db.begin().await.context("开始事务失败")?;
-    
+
     // 先插入用户获取ID
     let user = account_user::ActiveModel {
         id: NotSet,
@@ -90,7 +93,7 @@ async fn register(
         email: Set(body.email),
         passwd: Set(body.passwd),
         last_login: Set(Some(client_ip.0.into())),
-        credits: Set(100), // 默认100积分
+        credits: Set(100),                    // 默认100积分
         invite_code: Set("TEMP".to_string()), // 临时邀请码，获取ID后立即更新
         invited_by: Set(invited_by),
         email_subscribed: Set(true),
@@ -124,7 +127,7 @@ async fn register(
             .await
             .context("处理邀请奖励失败")?;
     }
-    
+
     // 提交事务
     txn.commit().await.context("提交事务失败")?;
 
@@ -188,7 +191,8 @@ async fn reset_validate_code(
     Config(email): Config<Email>,
     Valid(Json(body)): Valid<Json<SendEmailReq>>,
 ) -> Result<Json<bool>> {
-    let code = gen_validate_code(&mut redis, &body.email, ValidateCodePurpose::ResetPassword).await?;
+    let code =
+        gen_validate_code(&mut redis, &body.email, ValidateCodePurpose::ResetPassword).await?;
 
     let template = ValidateCodeEmailTemplate {
         tip: "请确认您是否需要重置密码，重置密码请在系统中输入以下验证码(5分钟内有效)：",
@@ -346,12 +350,9 @@ async fn export_data(
 /// # 每日签到
 /// @tag user
 #[post_api("/user/check-in")]
-async fn check_in(
-    claims: Claims,
-    Component(db): Component<DbConn>,
-) -> Result<Json<CheckInResp>> {
-    use crate::model::prelude::CreditLog;
+async fn check_in(claims: Claims, Component(db): Component<DbConn>) -> Result<Json<CheckInResp>> {
     use crate::model::credit_log;
+    use crate::model::prelude::CreditLog;
     use chrono::{Local, NaiveTime};
 
     let today_start = Local::now().date_naive().and_time(NaiveTime::MIN);
@@ -404,8 +405,8 @@ async fn get_credit_logs(
     claims: Claims,
     Component(db): Component<DbConn>,
 ) -> Result<Json<Vec<CreditLogResp>>> {
-    use crate::model::prelude::CreditLog;
     use crate::model::credit_log;
+    use crate::model::prelude::CreditLog;
 
     let logs = CreditLog::find()
         .filter(credit_log::Column::UserId.eq(claims.uid))

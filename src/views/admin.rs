@@ -1,4 +1,8 @@
-use crate::model::{account_user, scraper_task, sea_orm_active_enums::{ProductEdition, TemplateTopic}, task_template};
+use crate::model::{
+    account_user, scraper_task,
+    sea_orm_active_enums::{ProductEdition, TemplateTopic},
+    task_template,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use validator::Validate;
@@ -30,7 +34,11 @@ impl From<account_user::Model> for UserResp {
             id: user.id,
             username: user.name,
             email: user.email,
-            status: if user.locked { "locked".to_string() } else { "active".to_string() },
+            status: if user.locked {
+                "locked".to_string()
+            } else {
+                "active".to_string()
+            },
             created_at: user.created.format("%Y-%m-%d %H:%M:%S").to_string(),
             credits: user.credits,
             invite_code: user.invite_code,
@@ -45,7 +53,10 @@ impl From<account_user::Model> for UserResp {
 pub struct CreateUserReq {
     #[validate(length(min = 1, max = 32, message = "用户名长度必须在1-32字符之间"))]
     pub username: String,
-    #[validate(email(message = "邮箱格式不正确"), length(max = 64, message = "邮箱长度不能超过64字符"))]
+    #[validate(
+        email(message = "邮箱格式不正确"),
+        length(max = 64, message = "邮箱长度不能超过64字符")
+    )]
     pub email: String,
     #[validate(length(min = 6, max = 32, message = "密码长度必须在6-32字符之间"))]
     pub password: String,
@@ -55,7 +66,10 @@ pub struct CreateUserReq {
 pub struct UpdateUserReq {
     #[validate(length(min = 1, max = 32, message = "用户名长度必须在1-32字符之间"))]
     pub username: String,
-    #[validate(email(message = "邮箱格式不正确"), length(max = 64, message = "邮箱长度不能超过64字符"))]
+    #[validate(
+        email(message = "邮箱格式不正确"),
+        length(max = 64, message = "邮箱长度不能超过64字符")
+    )]
     pub email: String,
     pub locked: Option<bool>,
     pub edition: Option<ProductEdition>,

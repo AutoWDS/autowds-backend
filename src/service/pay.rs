@@ -1,18 +1,19 @@
 use crate::{
     config::pay::PayConfig,
-    model::{pay_order, sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition}},
+    model::{
+        pay_order,
+        sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition},
+    },
     utils::pay_plugin::{Alipay, WechatPayClient},
 };
 use alipay_sdk_rust::{biz, response::TradePrecreateResponse};
 use anyhow::{anyhow, Context};
 use chrono::Local;
-use sea_orm::{
-    prelude::DateTime, ActiveModelTrait, ActiveValue::Set, DbConn,
-};
+use sea_orm::{prelude::DateTime, ActiveModelTrait, ActiveValue::Set, DbConn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use summer::{plugin::service::Service, tracing};
 use std::{collections::HashMap, env, fs::File, io::Write as _, path::Path};
+use summer::{plugin::service::Service, tracing};
 use wechat_pay_rust_sdk::{
     model::{NativeParams, WechatPayDecodeData, WechatPayNotify},
     pay::PayNotifyTrait,
@@ -117,7 +118,10 @@ impl PayOrderService {
         Ok(response.qr_code)
     }
 
-    pub async fn query_alipay_order(&self, model: pay_order::Model) -> anyhow::Result<pay_order::Model> {
+    pub async fn query_alipay_order(
+        &self,
+        model: pay_order::Model,
+    ) -> anyhow::Result<pay_order::Model> {
         let order_id = model.id;
         let alipay = self.alipay.clone();
         let mut biz_content = biz::TradeQueryBiz::new();
@@ -150,7 +154,10 @@ impl PayOrderService {
         Ok(model)
     }
 
-    pub async fn query_wechat_order(&self, model: pay_order::Model) -> anyhow::Result<pay_order::Model> {
+    pub async fn query_wechat_order(
+        &self,
+        model: pay_order::Model,
+    ) -> anyhow::Result<pay_order::Model> {
         let wechat = self.wechat.clone();
         let order_id = model.id;
         let mchid = &wechat.mch_id;
