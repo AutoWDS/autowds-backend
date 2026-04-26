@@ -93,8 +93,8 @@ create type order_status as enum ('created', 'paid', 'closed');
 
 -- 支付订单表
 create table if not exists pay_order (
-    id serial primary key,
-    user_id integer not null,
+    id bigserial primary key,
+    user_id bigint not null,
     level order_level not null,
     edition product_edition not null,
     pay_from pay_from not null,
