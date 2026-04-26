@@ -1,6 +1,8 @@
 [logger]
 enable = true
 pretty_backtrace = true
+level = "${RUST_LOG_LEVEL:info}"
+override_filter = "${LOG_LEVEL_FILTER:info,axum=warn}"
 
 [web]
 graceful = true
