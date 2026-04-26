@@ -45,7 +45,7 @@ async fn create_trade(
         .create_order(claims.uid, trade.level, trade.edition, trade.pay_from)
         .await
         .map_err(|e| {
-            tracing::error!("创建订单失败: {}", e);
+            tracing::error!("创建订单失败: {e:?}");
             (StatusCode::INTERNAL_SERVER_ERROR, "创建订单失败").into_response()
         })?;
 
@@ -68,7 +68,7 @@ async fn pay_status(
     let status = pay_order::Entity::find_order_status(&db, order_id, claims.uid)
         .await
         .map_err(|e| {
-            tracing::error!("查询订单状态失败: {}", e);
+            tracing::error!("查询订单状态失败: {e:?}");
             (StatusCode::INTERNAL_SERVER_ERROR, "查询失败").into_response()
         })?
         .ok_or_else(|| (StatusCode::NOT_FOUND, "订单不存在").into_response())?;
@@ -191,7 +191,7 @@ async fn pay_stats(
     match PayOrder::stats_by_day(&pay_service.db, start_date, end_date).await {
         Ok(stats) => Ok(Json(serde_json::to_value(stats).unwrap())),
         Err(e) => {
-            tracing::error!("获取支付统计失败: {}", e);
+            tracing::error!("获取支付统计失败: {e:?}");
             Err((StatusCode::INTERNAL_SERVER_ERROR, "获取统计失败").into_response())
         }
     }
