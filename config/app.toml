@@ -1,3 +1,7 @@
+[logger]
+enable = true
+pretty_backtrace = true
+
 [web]
 graceful = true
 connect_info = true
