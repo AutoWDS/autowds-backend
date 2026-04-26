@@ -8,7 +8,8 @@ use axum_valid::Valid;
 use chrono::Local;
 use itertools::Itertools;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, ExprTrait, PaginatorTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, ExprTrait, PaginatorTrait,
+    QueryFilter, Set,
 };
 use serde_json::Value;
 use summer_job::job::Job;
@@ -59,13 +60,22 @@ async fn query_task(
     Component(db): Component<DbConn>,
     pagination: Pagination,
 ) -> Result<Json<Page<scraper_task::Model>>> {
-    let mut filter = scraper_task::Column::UserId
-        .eq(claims.uid)
-        .and(scraper_task::Column::Deleted.eq(false));
-    filter = match q.name {
-        Some(name) => filter.and(scraper_task::Column::Name.starts_with(name)),
-        None => filter,
-    };
+    let mut filter = Condition::all()
+        .add(scraper_task::Column::UserId.eq(claims.uid))
+        .add(scraper_task::Column::Deleted.eq(false));
+    if let Some(name) = q.name {
+        filter = filter.add(scraper_task::Column::Name.starts_with(name));
+    }
+    if let Some(start) = q.start_time {
+        if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&start) {
+            filter = filter.add(scraper_task::Column::Created.gte(dt.naive_utc()));
+        }
+    }
+    if let Some(end) = q.end_time {
+        if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&end) {
+            filter = filter.add(scraper_task::Column::Created.lte(dt.naive_utc()));
+        }
+    }
     let page = ScraperTask::find()
         .filter(filter)
         .page(&db, &pagination)
