@@ -95,18 +95,17 @@ create type order_status as enum ('created', 'paid', 'closed');
 create table if not exists pay_order (
     id serial primary key,
     user_id integer not null,
-    level varchar(20) not null check (level in ('monthly', 'annual')),
+    level order_level not null,
     edition product_edition not null,
-    pay_from varchar(20) not null check (pay_from in ('alipay', 'wechat')),
-    status varchar(20) not null default 'created' check (status in ('created', 'paid', 'closed')),
+    pay_from pay_from not null,
+    status order_status not null default 'created',
     created timestamp not null default current_timestamp,
     modified timestamp not null default current_timestamp,
     confirm timestamp null,
-    resp jsonb null,
-    
-    -- 索引
-    index idx_pay_order_user_id (user_id),
-    index idx_pay_order_status (status),
-    index idx_pay_order_created (created),
-    index idx_pay_order_confirm (confirm)
+    resp jsonb null
 );
+
+create index idx_pay_order_user_id on pay_order(user_id);
+create index idx_pay_order_status on pay_order(status);
+create index idx_pay_order_created on pay_order(created);
+create index idx_pay_order_confirm on pay_order(confirm);
