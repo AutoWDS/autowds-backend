@@ -20,6 +20,9 @@ use wechat_pay_rust_sdk::{
     response::{NativeResponse, ResponseTrait},
 };
 
+const PAY_OUT_TRADE_PREFIX: &str = "AWDS";
+const PAY_OUT_TRADE_TIME_LEN: usize = 14;
+
 #[derive(Clone, Service)]
 pub struct PayOrderService {
     #[inject(component)]
@@ -59,8 +62,14 @@ impl PayOrderService {
             level.amount()
         };
         let qrcode_url = match from {
-            PayFrom::Alipay => self.alipay(subject, order_id, amount).await?,
-            PayFrom::Wechat => self.wechat_pay(subject, order_id, amount).await?,
+            PayFrom::Alipay => {
+                self.alipay(subject, order.id, order.created, amount)
+                    .await?
+            }
+            PayFrom::Wechat => {
+                self.wechat_pay(subject, order.id, order.created, amount)
+                    .await?
+            }
         };
         Ok((order_id, qrcode_url))
     }
@@ -69,9 +78,10 @@ impl PayOrderService {
         &self,
         subject: String,
         order_id: i64,
+        created: DateTime,
         amount: i32,
     ) -> anyhow::Result<Option<String>> {
-        let out_trade_no = format!("{:06}", order_id); // 微信"商户订单号"字符串规则校验最少6字节
+        let out_trade_no = Self::build_pay_out_trade_no(order_id, created);
         let wechat = self.wechat.clone();
         let resp = wechat
             .native_pay(NativeParams::new(subject, out_trade_no, amount.into()))
@@ -89,10 +99,12 @@ impl PayOrderService {
     async fn alipay(
         &self,
         subject: String,
-        out_trade_no: i64,
+        order_id: i64,
+        created: DateTime,
         amount: i32,
     ) -> anyhow::Result<Option<String>> {
         let alipay = self.alipay.clone();
+        let out_trade_no = Self::build_pay_out_trade_no(order_id, created);
         let mut biz_content = biz::TradePrecreateBiz::new();
         biz_content.set_subject(subject.into());
         biz_content.set_out_trade_no(out_trade_no.into());
@@ -102,7 +114,7 @@ impl PayOrderService {
             .context("支付宝订单创建失败")?;
         let resp_json = serde_json::to_value(&resp).context("支付宝响应出错")?;
         pay_order::ActiveModel {
-            id: Set(out_trade_no),
+            id: Set(order_id),
             resp: Set(Some(resp_json)),
             ..Default::default()
         }
@@ -123,9 +135,10 @@ impl PayOrderService {
         model: pay_order::Model,
     ) -> anyhow::Result<pay_order::Model> {
         let order_id = model.id;
+        let out_trade_no = Self::build_pay_out_trade_no(order_id, model.created);
         let alipay = self.alipay.clone();
         let mut biz_content = biz::TradeQueryBiz::new();
-        biz_content.set_out_trade_no(order_id.into());
+        biz_content.set_out_trade_no(out_trade_no.into());
 
         let resp = alipay
             .trade_query(&biz_content)
@@ -160,13 +173,14 @@ impl PayOrderService {
     ) -> anyhow::Result<pay_order::Model> {
         let wechat = self.wechat.clone();
         let order_id = model.id;
+        let out_trade_no = Self::build_pay_out_trade_no(order_id, model.created);
         let mchid = &wechat.mch_id;
         let resp = wechat
             .get_pay::<WechatPayOrderResp>(&format!(
-                "/v3/pay/transactions/out-trade-no/{order_id:06}?mchid={mchid}"
+                "/v3/pay/transactions/out-trade-no/{out_trade_no}?mchid={mchid}"
             ))
             .await
-            .context("微信订单查询失败")?;
+            .with_context(|| format!("微信订单查询失败: {out_trade_no}"))?;
 
         tracing::info!(
             "微信订单#{order_id}状态: {}({})",
@@ -306,7 +320,8 @@ impl PayOrderService {
         tracing::info!("接收到微信订单状态: {}", data.trade_state);
 
         let status = OrderStatus::from_wechat(&data.trade_state);
-        let out_trade_no = data.out_trade_no.parse::<i64>().context("解析订单号失败")?;
+        let out_trade_no =
+            Self::parse_pay_out_trade_no(&data.out_trade_no).context("解析订单号失败")?;
         let now = Local::now().naive_local();
 
         let model = pay_order::ActiveModel {
@@ -330,7 +345,8 @@ impl PayOrderService {
 
         tracing::info!("接收到支付宝订单状态: {}", notify.trade_status);
 
-        let out_trade_no = notify.out_trade_no;
+        let out_trade_no =
+            Self::parse_pay_out_trade_no(&notify.out_trade_no).context("解析订单号失败")?;
         let status = OrderStatus::from_alipay(&notify.trade_status);
         let now = Local::now().naive_local();
 
@@ -355,6 +371,25 @@ impl PayOrderService {
         after_time: DateTime,
     ) -> anyhow::Result<Vec<pay_order::Model>> {
         pay_order::Entity::find_wait_confirm_after(&self.db, after_time).await
+    }
+
+    fn build_pay_out_trade_no(order_id: i64, created: DateTime) -> String {
+        format!(
+            "{PAY_OUT_TRADE_PREFIX}{}{order_id:08}",
+            created.format("%Y%m%d%H%M%S")
+        )
+    }
+
+    fn parse_pay_out_trade_no(out_trade_no: &str) -> anyhow::Result<i64> {
+        let suffix = out_trade_no
+            .strip_prefix(PAY_OUT_TRADE_PREFIX)
+            .ok_or_else(|| anyhow!("非法商户订单号前缀: {out_trade_no}"))?;
+        let order_id = suffix
+            .get(PAY_OUT_TRADE_TIME_LEN..)
+            .ok_or_else(|| anyhow!("非法商户订单号长度: {out_trade_no}"))?;
+        order_id
+            .parse::<i64>()
+            .with_context(|| format!("非法商户订单号: {out_trade_no}"))
     }
 }
 
@@ -385,7 +420,7 @@ pub struct AlipayNotify {
     pub trade_no: String,
     pub app_id: String,
     pub auth_app_id: String,
-    pub out_trade_no: i64,
+    pub out_trade_no: String,
     pub out_biz_no: Option<String>,
 
     #[serde(alias = "buyer_id", alias = "buyer_open_id")]
