@@ -107,7 +107,7 @@ pub struct TaskResp {
     pub id: i64,
     pub name: String,
     pub status: String,
-    pub template_id: i64,
+    pub user_id: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -126,7 +126,7 @@ impl From<scraper_task::Model> for TaskResp {
             id: task.id,
             name: task.name,
             status: status.to_string(),
-            template_id: 0, // 如果有template_id字段，需要从task中获取
+            user_id: task.user_id,
             created_at: task.created.format("%Y-%m-%d %H:%M:%S").to_string(),
             updated_at: task.modified.format("%Y-%m-%d %H:%M:%S").to_string(),
         }
