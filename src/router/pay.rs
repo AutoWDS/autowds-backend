@@ -42,7 +42,7 @@ async fn create_trade(
     Form(trade): Form<TradeCreateQuery>,
 ) -> Result<impl IntoResponse, Response> {
     let (order_id, qrcode_url) = ps
-        .create_order(claims.uid, trade.level, trade.pay_from)
+        .create_order(claims.uid, trade.level, trade.edition, trade.pay_from)
         .await
         .map_err(|e| {
             tracing::error!("创建订单失败: {}", e);

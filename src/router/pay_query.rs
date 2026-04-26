@@ -1,10 +1,11 @@
-use crate::model::sea_orm_active_enums::{OrderLevel, PayFrom};
+use crate::model::sea_orm_active_enums::{OrderLevel, PayFrom, ProductEdition};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct TradeCreateQuery {
     pub level: OrderLevel,
+    pub edition: ProductEdition,
     pub pay_from: PayFrom,
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     config::pay::PayConfig,
-    model::{pay_order, sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom}},
+    model::{pay_order, sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition}},
     utils::pay_plugin::{Alipay, WechatPayClient},
 };
 use alipay_sdk_rust::{biz, response::TradePrecreateResponse};
@@ -36,11 +36,13 @@ impl PayOrderService {
         &self,
         uid: i64,
         level: OrderLevel,
+        edition: ProductEdition,
         from: PayFrom,
     ) -> anyhow::Result<(i64, Option<String>)> {
         let order = pay_order::ActiveModel {
             user_id: Set(uid),
             level: Set(level),
+            edition: Set(edition),
             pay_from: Set(from),
             ..Default::default()
         }
