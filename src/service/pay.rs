@@ -4,15 +4,19 @@ use crate::{
         pay_order,
         sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition},
     },
-    utils::pay_plugin::{Alipay, WechatPayClient},
+    utils::pay_plugin::{Alipay, PaddleClient, WechatPayClient},
 };
 use alipay_sdk_rust::{biz, response::TradePrecreateResponse};
 use anyhow::{anyhow, Context};
 use chrono::Local;
-use sea_orm::{prelude::DateTime, ActiveModelTrait, ActiveValue::Set, DbConn};
+use hmac::{Hmac, KeyInit, Mac};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use sea_orm::{prelude::DateTime, ActiveModelTrait, ActiveValue::Set, DbConn, EntityTrait};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
+use sha2::Sha256;
 use std::{collections::HashMap, env, fs::File, io::Write as _, path::Path};
+use subtle::ConstantTimeEq;
 use summer::{plugin::service::Service, tracing};
 use wechat_pay_rust_sdk::{
     model::{NativeParams, WechatPayDecodeData, WechatPayNotify},
@@ -22,6 +26,10 @@ use wechat_pay_rust_sdk::{
 
 const PAY_OUT_TRADE_PREFIX: &str = "AWDS";
 const PAY_OUT_TRADE_TIME_LEN: usize = 14;
+const PADDLE_SIGNATURE_PREFIX: &str = "h1=";
+const PADDLE_SIGNATURE_TS_PREFIX: &str = "ts=";
+
+type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Clone, Service)]
 pub struct PayOrderService {
@@ -31,6 +39,8 @@ pub struct PayOrderService {
     alipay: Alipay,
     #[inject(component)]
     wechat: WechatPayClient,
+    #[inject(component)]
+    paddle: PaddleClient,
     #[inject(config)]
     config: PayConfig,
 }
@@ -46,7 +56,7 @@ impl PayOrderService {
         let order = pay_order::ActiveModel {
             user_id: Set(uid),
             level: Set(level),
-            edition: Set(edition),
+            edition: Set(edition.clone()),
             pay_from: Set(from),
             ..Default::default()
         }
@@ -70,6 +80,7 @@ impl PayOrderService {
                 self.wechat_pay(subject, order.id, order.created, amount)
                     .await?
             }
+            PayFrom::Paddle => self.paddle_pay(uid, level, edition, order.id).await?,
         };
         Ok((order_id, qrcode_url))
     }
@@ -128,6 +139,78 @@ impl PayOrderService {
         } = resp;
         tracing::info!("alipay resp sign ==> {sign:?}, alipay_cert_sn ==> {alipay_cert_sn:?}");
         Ok(response.qr_code)
+    }
+
+    async fn paddle_pay(
+        &self,
+        uid: i64,
+        level: OrderLevel,
+        edition: ProductEdition,
+        order_id: i64,
+    ) -> anyhow::Result<Option<String>> {
+        if !self.config.paddle_enable {
+            return Err(anyhow!("Paddle 支付未启用"));
+        }
+
+        let price_id = match level {
+            OrderLevel::Monthly => &self.config.paddle_monthly_price_id,
+            OrderLevel::Annual => &self.config.paddle_annual_price_id,
+        };
+        if price_id.is_empty() {
+            return Err(anyhow!("Paddle price_id 未配置: {level:?}"));
+        }
+        if self.config.paddle_api_key.is_empty() {
+            return Err(anyhow!("Paddle API Key 未配置"));
+        }
+
+        let body = PaddleCreateTransactionReq {
+            items: vec![PaddleTransactionItem {
+                price_id: price_id.clone(),
+                quantity: 1,
+            }],
+            collection_mode: "automatic",
+            custom_data: json!({
+                "order_id": order_id,
+                "user_id": uid,
+                "level": level,
+                "edition": edition,
+            }),
+        };
+
+        let url = format!(
+            "{}/transactions",
+            self.config.paddle_api_url.trim_end_matches('/')
+        );
+        let resp = self
+            .paddle
+            .post(url)
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.config.paddle_api_key),
+            )
+            .header(CONTENT_TYPE, "application/json")
+            .json(&body)
+            .send()
+            .await
+            .context("Paddle 订单创建请求失败")?
+            .error_for_status()
+            .context("Paddle 订单创建失败")?
+            .json::<PaddleApiResp<PaddleTransaction>>()
+            .await
+            .context("Paddle 订单创建响应解析失败")?;
+
+        pay_order::ActiveModel {
+            id: Set(order_id),
+            resp: Set(Some(
+                serde_json::to_value(&resp).context("Paddle resp to json failed")?,
+            )),
+            ..Default::default()
+        }
+        .update(&self.db)
+        .await
+        .context("更新 Paddle 订单响应失败")?;
+
+        Ok(resp.data.checkout.and_then(|checkout| checkout.url))
     }
 
     pub async fn query_alipay_order(
@@ -207,6 +290,60 @@ impl PayOrderService {
         Ok(model)
     }
 
+    pub async fn query_paddle_order(
+        &self,
+        model: pay_order::Model,
+    ) -> anyhow::Result<pay_order::Model> {
+        let transaction_id = model
+            .resp
+            .as_ref()
+            .and_then(|resp| resp.pointer("/data/id"))
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow!("Paddle transaction_id 不存在: order_id={}", model.id))?;
+
+        let url = format!(
+            "{}/transactions/{transaction_id}",
+            self.config.paddle_api_url.trim_end_matches('/')
+        );
+        let resp = self
+            .paddle
+            .get(url)
+            .header(
+                AUTHORIZATION,
+                format!("Bearer {}", self.config.paddle_api_key),
+            )
+            .send()
+            .await
+            .context("Paddle 订单查询请求失败")?
+            .error_for_status()
+            .context("Paddle 订单查询失败")?
+            .json::<PaddleApiResp<PaddleTransaction>>()
+            .await
+            .context("Paddle 订单查询响应解析失败")?;
+
+        tracing::info!("Paddle 订单#{}状态: {}", model.id, resp.data.status);
+
+        let status = OrderStatus::from_paddle(&resp.data.status);
+        let confirm = (status == OrderStatus::Paid)
+            .then(|| Local::now().naive_local())
+            .or(model.confirm);
+
+        let model = pay_order::ActiveModel {
+            id: Set(model.id),
+            confirm: Set(confirm),
+            status: Set(status),
+            resp: Set(Some(
+                serde_json::to_value(resp).context("Paddle resp to json failed")?,
+            )),
+            ..Default::default()
+        }
+        .update(&self.db)
+        .await
+        .with_context(|| format!("update_pay_order({}) failed", model.id))?;
+
+        Ok(model)
+    }
+
     pub async fn alipay_verify_sign(&self, raw_body: &[u8]) -> anyhow::Result<()> {
         let alipay = self.alipay.clone();
         let r = alipay
@@ -235,6 +372,45 @@ impl PayOrderService {
             .context("微信验签失败，非法数据")?;
 
         serde_json::from_str::<WechatPayNotify>(body).context("微信回调数据解析失败")
+    }
+
+    pub fn paddle_verify_signature(
+        &self,
+        signature_header: &str,
+        raw_body: &[u8],
+    ) -> anyhow::Result<PaddleWebhookEvent> {
+        if self.config.paddle_webhook_secret.is_empty() {
+            return Err(anyhow!("Paddle Webhook Secret 未配置"));
+        }
+
+        let mut timestamp = None;
+        let mut signature = None;
+        for item in signature_header.split(';').map(str::trim) {
+            if let Some(value) = item.strip_prefix(PADDLE_SIGNATURE_TS_PREFIX) {
+                timestamp = Some(value);
+            }
+            if let Some(value) = item.strip_prefix(PADDLE_SIGNATURE_PREFIX) {
+                signature = Some(value);
+            }
+        }
+
+        let timestamp = timestamp.ok_or_else(|| anyhow!("Paddle 签名缺少 ts"))?;
+        let signature = signature.ok_or_else(|| anyhow!("Paddle 签名缺少 h1"))?;
+        let signature = hex::decode(signature).context("Paddle 签名格式错误")?;
+
+        let mut mac = HmacSha256::new_from_slice(self.config.paddle_webhook_secret.as_bytes())
+            .context("Paddle HMAC 初始化失败")?;
+        mac.update(timestamp.as_bytes());
+        mac.update(b":");
+        mac.update(raw_body);
+        let expected = mac.finalize().into_bytes();
+
+        if expected.as_slice().ct_eq(signature.as_slice()).into() {
+            serde_json::from_slice::<PaddleWebhookEvent>(raw_body)
+                .context("Paddle 回调数据解析失败")
+        } else {
+            Err(anyhow!("Paddle 验签失败"))
+        }
     }
 
     pub async fn get_wechat_pub_key(&self, serial: &str) -> anyhow::Result<String> {
@@ -366,6 +542,61 @@ impl PayOrderService {
         Ok(model)
     }
 
+    pub async fn notify_paddle(
+        &self,
+        event: &PaddleWebhookEvent,
+    ) -> anyhow::Result<pay_order::Model> {
+        tracing::info!(
+            "接收到 Paddle 事件: {}, transaction status: {}",
+            event.event_type,
+            event.data.status
+        );
+
+        let order_id = event
+            .data
+            .custom_data
+            .as_ref()
+            .and_then(|custom_data| custom_data.get("order_id"))
+            .and_then(Value::as_i64)
+            .ok_or_else(|| anyhow!("Paddle 回调缺少 custom_data.order_id"))?;
+
+        let status = OrderStatus::from_paddle_event(&event.event_type, &event.data.status);
+        let current = pay_order::Entity::find_by_id(order_id)
+            .one(&self.db)
+            .await
+            .with_context(|| format!("find_pay_order({order_id}) failed"))?;
+        let (status, confirm) = match current {
+            Some(current) if current.status == OrderStatus::Paid && status != OrderStatus::Paid => {
+                (current.status, current.confirm)
+            }
+            Some(current) => (
+                status,
+                (status == OrderStatus::Paid)
+                    .then(|| Local::now().naive_local())
+                    .or(current.confirm),
+            ),
+            None => (
+                status,
+                (status == OrderStatus::Paid).then(|| Local::now().naive_local()),
+            ),
+        };
+
+        let model = pay_order::ActiveModel {
+            id: Set(order_id),
+            confirm: Set(confirm),
+            status: Set(status),
+            resp: Set(Some(
+                serde_json::to_value(event).context("Paddle event to json failed")?,
+            )),
+            ..Default::default()
+        }
+        .update(&self.db)
+        .await
+        .with_context(|| format!("update_pay_order({order_id}) failed"))?;
+
+        Ok(model)
+    }
+
     pub async fn find_wait_confirm_after(
         &self,
         after_time: DateTime,
@@ -407,6 +638,55 @@ pub struct WechatPayOrderResp {
 }
 
 impl ResponseTrait for WechatPayOrderResp {}
+
+#[derive(Debug, Serialize)]
+struct PaddleCreateTransactionReq {
+    items: Vec<PaddleTransactionItem>,
+    collection_mode: &'static str,
+    custom_data: Value,
+}
+
+#[derive(Debug, Serialize)]
+struct PaddleTransactionItem {
+    price_id: String,
+    quantity: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaddleApiResp<T> {
+    pub data: T,
+    #[serde(default)]
+    pub meta: Option<Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaddleTransaction {
+    pub id: String,
+    pub status: String,
+    #[serde(default)]
+    pub custom_data: Option<Value>,
+    #[serde(default)]
+    pub checkout: Option<PaddleCheckout>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaddleCheckout {
+    pub url: Option<String>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaddleWebhookEvent {
+    pub event_id: String,
+    pub event_type: String,
+    pub occurred_at: String,
+    pub data: PaddleTransaction,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
 
 /// 支付宝异步通知参数
 #[derive(Debug, Serialize, Deserialize)]

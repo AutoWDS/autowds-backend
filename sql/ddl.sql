@@ -85,8 +85,8 @@ create index idx_credit_log_user_id_created on credit_log(user_id, created desc)
 -- 创建订单级别枚举类型
 create type order_level as enum ('monthly', 'annual');
 
--- 创建支付来源枚举类型  
-create type pay_from as enum ('alipay', 'wechat');
+-- 创建支付来源枚举类型
+create type pay_from as enum ('alipay', 'wechat', 'paddle');
 
 -- 创建订单状态枚举类型
 create type order_status as enum ('created', 'paid', 'closed');

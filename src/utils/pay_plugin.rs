@@ -1,6 +1,7 @@
 use crate::config::pay::PayConfig;
 use alipay_sdk_rust::pay::{PayClient, Payer};
 use derive_more::derive::Deref;
+use reqwest::Client;
 use std::sync::Arc;
 use summer::{
     app::AppBuilder,
@@ -41,6 +42,8 @@ impl Plugin for PayPlugin {
             let wechat_pay = WechatPay::from_env();
             app.add_component(WechatPayClient(Arc::new(wechat_pay)));
         }
+
+        app.add_component(PaddleClient(Client::new()));
     }
 }
 
@@ -49,3 +52,6 @@ pub struct Alipay(Arc<dyn Payer + Send + Sync>);
 
 #[derive(Clone, Deref)]
 pub struct WechatPayClient(Arc<WechatPay>);
+
+#[derive(Clone, Deref)]
+pub struct PaddleClient(Client);

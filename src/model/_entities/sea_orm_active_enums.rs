@@ -148,6 +148,9 @@ pub enum PayFrom {
     /// # 微信
     #[sea_orm(string_value = "wechat")]
     Wechat,
+    /// # Paddle
+    #[sea_orm(string_value = "paddle")]
+    Paddle,
 }
 
 #[derive(

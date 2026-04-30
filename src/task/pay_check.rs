@@ -31,6 +31,13 @@ async fn check_pending_orders(Component(pay_service): Component<PayOrderService>
                             tracing::info!("已更新微信订单 {} 状态", order.id);
                         }
                     }
+                    PayFrom::Paddle => {
+                        if let Err(e) = pay_service.query_paddle_order(order.clone()).await {
+                            tracing::error!("查询 Paddle 订单 {} 状态失败: {}", order.id, e);
+                        } else {
+                            tracing::info!("已更新 Paddle 订单 {} 状态", order.id);
+                        }
+                    }
                 }
             }
         }

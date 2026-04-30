@@ -10,6 +10,8 @@ pub struct PayConfig {
     pub wechat_pay_enable: bool,
     #[serde(default)]
     pub alipay_enable: bool,
+    #[serde(default)]
+    pub paddle_enable: bool,
     pub alipay_api_url: String,
     pub alipay_app_id: String,
     /// 支付宝根证书
@@ -19,4 +21,9 @@ pub struct PayConfig {
     pub alipay_app_private_key: String,
     pub alipay_app_public_key: String,
     pub alipay_callback_url: String,
+    pub paddle_api_url: String,
+    pub paddle_api_key: String,
+    pub paddle_webhook_secret: String,
+    pub paddle_monthly_price_id: String,
+    pub paddle_annual_price_id: String,
 }

@@ -186,4 +186,20 @@ impl OrderStatus {
             _ => OrderStatus::Created,
         }
     }
+
+    pub fn from_paddle(status: &str) -> Self {
+        match status {
+            "paid" | "completed" => OrderStatus::Paid,
+            "canceled" => OrderStatus::Closed,
+            _ => OrderStatus::Created,
+        }
+    }
+
+    pub fn from_paddle_event(event_type: &str, status: &str) -> Self {
+        match event_type {
+            "transaction.paid" | "transaction.completed" => OrderStatus::Paid,
+            "transaction.canceled" => OrderStatus::Closed,
+            _ => OrderStatus::from_paddle(status),
+        }
+    }
 }

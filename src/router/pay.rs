@@ -163,6 +163,50 @@ async fn alipay_callback(
     Ok("success")
 }
 
+/// Paddle 支付回调
+#[post("/pay/notify/paddle")]
+async fn paddle_callback(
+    Component(ps): Component<PayOrderService>,
+    Component(us): Component<UserService>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> Result<Json<serde_json::Value>, Response> {
+    let signature = headers
+        .get("Paddle-Signature")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or_default();
+
+    let event = match ps.paddle_verify_signature(signature, &body) {
+        Err(e) => {
+            tracing::error!("Paddle 验签失败: {e:#}");
+            return Err((StatusCode::UNAUTHORIZED, "验签失败").into_response());
+        }
+        Ok(event) => event,
+    };
+
+    let model = match ps.notify_paddle(&event).await {
+        Err(e) => {
+            tracing::error!("处理 Paddle 回调失败: {e:#}");
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "处理失败").into_response());
+        }
+        Ok(model) => model,
+    };
+
+    if model.status == OrderStatus::Paid {
+        let pay_order::Model { user_id, level, .. } = model;
+        match us.confirm_user(user_id, level).await {
+            Err(e) => {
+                tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
+            }
+            Ok(u) => {
+                tracing::info!("confirm_user({user_id},{level:?}) success>>>{u:?}");
+            }
+        }
+    }
+
+    Ok(Json(json!({"ok": true})))
+}
+
 #[derive(Deserialize)]
 pub struct PayStatsQuery {
     pub start_date: Option<String>,
