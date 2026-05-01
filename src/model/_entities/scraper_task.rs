@@ -20,6 +20,8 @@ pub struct Model {
     pub data: Option<ScheduleData>,
     #[sea_orm(column_type = "JsonBinary")]
     pub rule: Json,
+    #[schemars(skip)]
+    pub job_id: Option<Uuid>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -193,8 +193,16 @@ async fn delete_task(
     claims: Claims,
     Path(id): Path<i64>,
     Component(db): Component<DbConn>,
+    Component(sched): Component<JobScheduler>,
 ) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    // 从调度器中移除关联的 cron 任务
+    if let Some(job_id) = task.job_id {
+        if let Err(e) = sched.remove(&job_id).await {
+            tracing::warn!("移除调度任务失败: {e:?}, job_id={job_id}");
+        }
+    }
 
     scraper_task::ActiveModel {
         id: Set(task.id),
@@ -322,19 +330,29 @@ async fn update_task_schedule_info(
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
     let cron = data.cron.clone();
+
+    // 先移除旧的调度任务
+    if let Some(old_job_id) = task.job_id {
+        if let Err(e) = sched.remove(&old_job_id).await {
+            tracing::warn!("移除旧调度任务失败: {e:?}, job_id={old_job_id}");
+        }
+    }
+
+    // 添加新的调度任务
+    let job = Job::cron_with_data(&cron, task.id)
+        .run(crate::task::dispatch_task)
+        .build(app);
+    let new_job_id = sched.add(job).await.context("添加调度失败")?;
+
     scraper_task::ActiveModel {
         id: Set(task.id),
         data: Set(Some(data)),
+        job_id: Set(Some(new_job_id)),
         ..Default::default()
     }
     .save(&db)
     .await
     .context("save scraper task failed")?;
-
-    let job = Job::cron_with_data(&cron, task.id)
-        .run(crate::task::dispatch_task)
-        .build(app);
-    sched.add(job).await.context("添加调度失败")?;
 
     Ok(Json(task.id))
 }

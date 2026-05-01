@@ -64,7 +64,8 @@ create table scraper_task (
     deleted boolean not null,
     name varchar(60) not null,
     rule jsonb not null,
-    data jsonb default null
+    data jsonb default null,
+    job_id uuid default null
 );
 create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);
 --- credit_log
