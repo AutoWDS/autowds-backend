@@ -12,6 +12,7 @@ use validator::Validate;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserListQuery {
     pub keyword: Option<String>,
+    pub user_id: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -234,6 +235,7 @@ pub struct TaskStatisticsResp {
     pub running: i64,
     pub completed: i64,
     pub failed: i64,
+    pub deleted: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

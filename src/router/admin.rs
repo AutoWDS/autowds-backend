@@ -43,7 +43,9 @@ async fn get_user_list(
 ) -> Result<Json<Page<UserResp>>> {
     let mut filter = account_user::Column::Id.is_not_null();
 
-    if let Some(keyword) = query.keyword {
+    if let Some(user_id) = query.user_id {
+        filter = filter.and(account_user::Column::Id.eq(user_id));
+    } else if let Some(keyword) = query.keyword {
         filter = filter.and(
             account_user::Column::Name
                 .contains(&keyword)
@@ -369,6 +371,7 @@ async fn get_task_list(
                     .and(scraper_task::Column::Deleted.eq(false)),
             ),
             "completed" => filter.and(scraper_task::Column::Deleted.eq(true)),
+            "deleted" => filter.and(scraper_task::Column::Deleted.eq(true)),
             _ => filter,
         };
     }
@@ -657,11 +660,25 @@ async fn get_task_statistics(
     // 失败任务暂时返回0（需要根据实际业务逻辑调整）
     let failed = 0i64;
 
+    // 统计已删除任务
+    let deleted_sql = "SELECT COUNT(*)::bigint as count FROM scraper_task WHERE deleted = true";
+    let deleted: i64 = db
+        .query_one_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            deleted_sql,
+            [],
+        ))
+        .await
+        .context("统计已删除任务失败")?
+        .and_then(|row| row.try_get("", "count").ok())
+        .unwrap_or(0);
+
     Ok(Json(TaskStatisticsResp {
         pending,
         running,
         completed,
         failed,
+        deleted,
     }))
 }
 
