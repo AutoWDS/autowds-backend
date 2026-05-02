@@ -426,6 +426,7 @@ async fn task_logs(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 struct TaskInstanceQuery {
+    #[serde(rename = "taskId")]
     task_id: i64,
 }
 
