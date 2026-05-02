@@ -8,4 +8,5 @@ pub mod favorite;
 pub mod pay_order;
 pub mod scraper_task;
 pub mod sea_orm_active_enums;
+pub mod task_instance;
 pub mod task_template;

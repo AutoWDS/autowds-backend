@@ -8,6 +8,7 @@ pub mod credit_log;
 pub mod favorite;
 pub mod pay_order;
 pub mod scraper_task;
+pub mod task_instance;
 pub mod task_template;
 
 impl sea_orm_active_enums::ProductEdition {

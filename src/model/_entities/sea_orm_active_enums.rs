@@ -179,3 +179,27 @@ pub enum OrderStatus {
     #[sea_orm(string_value = "closed")]
     Closed,
 }
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumIter,
+    DeriveActiveEnum,
+    Serialize,
+    Deserialize,
+    strum :: EnumString,
+    JsonSchema,
+    Display,
+)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "instance_status")]
+pub enum InstanceStatus {
+    #[sea_orm(string_value = "running")]
+    Running,
+    #[sea_orm(string_value = "success")]
+    Success,
+    #[sea_orm(string_value = "failed")]
+    Failed,
+}

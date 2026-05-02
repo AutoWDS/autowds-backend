@@ -121,18 +121,29 @@ where
         parts: &mut Parts,
         _state: &S,
     ) -> std::result::Result<Self, Self::Rejection> {
-        if !parts.headers.contains_key(header::AUTHORIZATION) {
-            return Ok(Self(None));
-        }
-        // Extract the token from the authorization header
-        let TypedHeader(Authorization(bearer)) = parts
+        let token = if let Ok(TypedHeader(Authorization(bearer))) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|_| KnownWebError::unauthorized("invalid token"))?;
-        // Decode the user data
-        let claims = decode(bearer.token())?;
+        {
+            Some(bearer.token().to_string())
+        } else {
+            // Fallback to query param `token` for SSE/EventSource
+            parts
+                .uri
+                .query()
+                .and_then(|q| {
+                    serde_urlencoded::from_str::<std::collections::HashMap<String, String>>(q)
+                        .ok()
+                })
+                .and_then(|params| params.get("token").cloned())
+        };
 
-        Ok(Self(Some(claims)))
+        let claims = match token {
+            Some(t) => Some(decode(&t)?),
+            None => None,
+        };
+
+        Ok(Self(claims))
     }
 }
 

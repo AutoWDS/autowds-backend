@@ -68,6 +68,20 @@ create table scraper_task (
     job_id uuid default null
 );
 create index idx_scraper_task_user_id_name_created on scraper_task(user_id, name, created);
+--- task_instance
+create sequence if not exists seq_task_instance;
+create type instance_status as enum ('running', 'success', 'failed');
+create table task_instance (
+    id bigint primary key default nextval('seq_task_instance'),
+    task_id bigint not null references scraper_task(id),
+    created timestamp not null default current_timestamp,
+    modified timestamp not null default current_timestamp,
+    status instance_status not null,
+    data_count int not null default 0,
+    log_key varchar(500) null,
+    error_message text null
+);
+create index idx_task_instance_task_id_created on task_instance(task_id, created desc);
 --- credit_log
 create sequence if not exists seq_credit_log;
 create type credit_operation as enum ('REGISTER', 'INVITE', 'EXPORT', 'ADMIN_ADJUST', 'CHECK_IN');

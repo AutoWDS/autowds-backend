@@ -1,25 +1,34 @@
-use crate::model::prelude::{AccountUser, ScraperTask};
+use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
+use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData};
 use crate::model::sea_orm_active_enums::ProductEdition;
-use crate::utils::jwt::Claims;
+use crate::utils::jwt::{Claims, OptionalClaims};
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use anyhow::Context;
 use axum_valid::Valid;
 use chrono::Local;
+use futures_util::StreamExt;
 use itertools::Itertools;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, ExprTrait, PaginatorTrait,
-    QueryFilter, Set,
+    QueryFilter, QueryOrder, Set,
 };
+use serde::Deserialize;
 use serde_json::Value;
+use std::convert::Infallible;
+use summer::config::ConfigRegistry;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
+use summer_redis::config::RedisConfig;
+use summer_redis::redis;
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use summer_web::axum::response::sse::{Event, Sse};
 use summer_web::axum::response::IntoResponse;
 use summer_web::axum::Json;
 use summer_web::error::{KnownWebError, Result};
 use summer_web::extractor::{AppRef, Component, Path, Query};
-use summer_web::{delete_api, get_api, patch_api, post_api, put_api};
+use summer_web::{delete_api, get, get_api, patch_api, post_api, put_api};
+use tokio_stream::wrappers::ReceiverStream;
 
 /// 检查用户任务数量限制
 async fn check_task_limit(
@@ -355,4 +364,89 @@ async fn update_task_schedule_info(
     .context("save scraper task failed")?;
 
     Ok(Json(task.id))
+}
+
+/// # 订阅任务执行日志（SSE）
+#[get("/task/{id}/logs")]
+async fn task_logs(
+    opt_claims: OptionalClaims,
+    Path(id): Path<i64>,
+    AppRef(app): AppRef,
+) -> Result<Sse<ReceiverStream<std::result::Result<Event, Infallible>>>> {
+    let _claims = opt_claims.get()?;
+    let config = app
+        .get_config::<RedisConfig>()
+        .map_err(|e| KnownWebError::internal_server_error(format!("读取Redis配置失败: {e}")))?;
+
+    let (tx, rx) = tokio::sync::mpsc::channel::<std::result::Result<Event, Infallible>>(100);
+
+    tokio::spawn(async move {
+        let client = match redis::Client::open(config.uri.clone()) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!("Redis client创建失败: {e}");
+                return;
+            }
+        };
+        let mut pubsub = match client.get_async_pubsub().await {
+            Ok(ps) => ps,
+            Err(e) => {
+                tracing::error!("Redis pubsub连接失败: {e}");
+                return;
+            }
+        };
+        if let Err(e) = pubsub.subscribe(format!("task:{id}:logs")).await {
+            tracing::error!("Redis订阅失败: {e}");
+            return;
+        }
+
+        let mut msg_stream = pubsub.on_message();
+        let mut check_interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
+
+        loop {
+            tokio::select! {
+                Some(msg) = msg_stream.next() => {
+                    let payload: String = msg.get_payload::<String>().unwrap_or_default();
+                    let event = Event::default().data(payload);
+                    if tx.send(Ok(event)).await.is_err() {
+                        break;
+                    }
+                }
+                _ = check_interval.tick() => {
+                    if tx.is_closed() {
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    Ok(Sse::new(ReceiverStream::new(rx)))
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct TaskInstanceQuery {
+    task_id: i64,
+}
+
+/// # 查询任务运行实例列表
+/// @tag task
+#[get_api("/instance")]
+async fn query_task_instances(
+    claims: Claims,
+    Query(q): Query<TaskInstanceQuery>,
+    Component(db): Component<DbConn>,
+    pagination: Pagination,
+) -> Result<Json<Page<task_instance::Model>>> {
+    // 先校验任务归属
+    ScraperTask::find_check_task(&db, q.task_id, claims.uid).await?;
+
+    let page = TaskInstance::find()
+        .filter(task_instance::Column::TaskId.eq(q.task_id))
+        .order_by_desc(task_instance::Column::Created)
+        .page(&db, &pagination)
+        .await
+        .context("query task instances failed")?;
+
+    Ok(Json(page))
 }
