@@ -27,6 +27,7 @@ async fn main() {
         .add_plugin(PayPlugin)
         .add_router(router::router())
         .add_worker(task::add_storage)
+        .add_scheduler(task::recover_task_schedules)
         .run()
         .await
 }

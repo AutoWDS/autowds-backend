@@ -13,7 +13,7 @@ summer = "0.5.1"
 summer-web = { version = "0.5.0", features = ["openapi", "openapi-scalar"] }
 summer-mail = "0.5.0"
 summer-redis = "0.5.0"
-summer-job = { version = "0.5.1", features = ["postgres_storage"] }
+summer-job = { version = "0.5.1" }
 summer-apalis = { version = "0.5.0-rc.0", features = ["redis", "board", "board-web"] }
 summer-sea-orm = { version = "0.5.0-rc.0", features = [
     "postgres",
