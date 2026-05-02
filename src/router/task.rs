@@ -16,6 +16,7 @@ use sea_orm::{
 use serde::Deserialize;
 use serde_json::Value;
 use std::convert::Infallible;
+use std::sync::Arc;
 use summer::config::ConfigRegistry;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
@@ -325,6 +326,23 @@ async fn get_task_schedule_info(
     Ok(Json(task.data))
 }
 
+async fn replace_cron_job(
+    sched: &JobScheduler,
+    app: Arc<summer::app::App>,
+    task: &scraper_task::Model,
+    cron: &str,
+) -> anyhow::Result<summer_job::JobId> {
+    if let Some(old_job_id) = task.job_id {
+        if let Err(e) = sched.remove(&old_job_id).await {
+            tracing::warn!("移除旧调度任务失败: {e:?}, job_id={old_job_id}");
+        }
+    }
+    let job = Job::cron_with_data(cron, task.id)
+        .run(crate::task::dispatch_task)
+        .build(app);
+    sched.add(job).await.context("添加调度失败")
+}
+
 /// # 修改指定任务的调度配置
 /// @tag task
 #[patch_api("/task/{id}/schedule")]
@@ -338,20 +356,7 @@ async fn update_task_schedule_info(
 ) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
-    let cron = data.cron.clone();
-
-    // 先移除旧的调度任务
-    if let Some(old_job_id) = task.job_id {
-        if let Err(e) = sched.remove(&old_job_id).await {
-            tracing::warn!("移除旧调度任务失败: {e:?}, job_id={old_job_id}");
-        }
-    }
-
-    // 添加新的调度任务
-    let job = Job::cron_with_data(&cron, task.id)
-        .run(crate::task::dispatch_task)
-        .build(app);
-    let new_job_id = sched.add(job).await.context("添加调度失败")?;
+    let new_job_id = replace_cron_job(&sched, app, &task, &data.cron).await?;
 
     scraper_task::ActiveModel {
         id: Set(task.id),
