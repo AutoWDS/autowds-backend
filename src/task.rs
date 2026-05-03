@@ -1,6 +1,10 @@
+use crate::config::apalis::ApalisConfig;
+use crate::model::prelude::ScraperTask;
+use crate::model::scraper_task;
 use anyhow::Context as _;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, EntityTrait, QueryFilter, Set};
 use std::sync::Arc;
+use summer::config::ConfigRegistry as _;
 use summer::{
     app::{App, AppBuilder},
     extractor::Component,
@@ -18,18 +22,13 @@ use summer_apalis::{apalis::prelude::*, apalis_board::axum::ui::ServeUI};
 use summer_job::extractor::Data;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
-use summer::config::ConfigRegistry as _;
 use summer_redis::Redis;
 use summer_web::{
     axum::{Extension, Router},
     WebConfigurator as _,
 };
-use crate::model::prelude::ScraperTask;
-use crate::model::scraper_task;
 
 mod pay_check;
-
-use crate::config::apalis::ApalisConfig;
 
 pub type TaskPublisher = RedisStorage<i64>;
 
@@ -119,7 +118,9 @@ pub fn recover_task_schedules(
 
                     tracing::info!(
                         "恢复任务调度: task_id={}, old_job_id={:?}, new_job_id={}",
-                        task.id, task.job_id, new_job_id
+                        task.id,
+                        task.job_id,
+                        new_job_id
                     );
                 }
                 Err(e) => {
