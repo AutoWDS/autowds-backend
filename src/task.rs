@@ -6,7 +6,7 @@ use summer::{
     extractor::Component,
     plugin::{ComponentRegistry, MutableComponentRegistry as _},
 };
-use summer_apalis::apalis_redis::RedisStorage;
+use summer_apalis::apalis_redis::{RedisConfig as ApalisRedisConfig, RedisStorage};
 use summer_apalis::{
     apalis::prelude::Monitor,
     apalis_board::axum::{
@@ -18,6 +18,7 @@ use summer_apalis::{apalis::prelude::*, apalis_board::axum::ui::ServeUI};
 use summer_job::extractor::Data;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
+use summer::config::ConfigRegistry as _;
 use summer_redis::Redis;
 use summer_web::{
     axum::{Extension, Router},
@@ -28,6 +29,8 @@ use crate::model::scraper_task;
 
 mod pay_check;
 
+use crate::config::apalis::ApalisConfig;
+
 pub type TaskPublisher = RedisStorage<i64>;
 
 pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {
@@ -35,7 +38,13 @@ pub fn add_storage(app: &mut AppBuilder, monitor: Monitor) -> Monitor {
     let line_subscriber = TracingSubscriber::new(&broadcaster);
     app.add_layer(line_subscriber.layer());
     let redis = app.get_expect_component::<Redis>();
-    let storage = TaskPublisher::new(redis);
+    let apalis_cfg = app
+        .get_config::<ApalisConfig>()
+        .expect("读取 [apalis] 配置失败（config/app.toml 中需有 [apalis] 段）");
+    let storage = TaskPublisher::new_with_config(
+        redis.clone(),
+        ApalisRedisConfig::new(apalis_cfg.queue.as_str()),
+    );
     app.add_component(storage.clone());
     let apalis_api = ApiBuilder::new(Router::new()).register(storage).build();
     let router = Router::new()

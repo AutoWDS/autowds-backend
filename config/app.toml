@@ -32,6 +32,11 @@ one_indexed = true
 [redis]
 uri = "${REDIS_URL:redis://localhost}"
 
+# Apalis 任务队列命名空间（Redis 键前缀）；须与 autowds-instance [redis] queue 一致。
+# 默认 i64 与历史上 `RedisStorage::<i64>::new` 隐式命名一致。
+[apalis]
+queue = "${APALIS_REDIS_QUEUE:i64}"
+
 [pay]
 ## https://openhome.alipay.com/develop/sandbox/app
 test_pay_amount = ${TEST_PAY_AMOUNT:false}
