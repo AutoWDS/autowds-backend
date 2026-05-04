@@ -1,6 +1,7 @@
 use crate::config::s3::TaskLogS3Config;
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
 use crate::s3_task_log::fetch_archived_task_log_bytes;
+use crate::task_instance_logs_sse::{open_archive_ndjson_sse, open_redis_pubsub_log_sse, redis_pubsub_channel};
 use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
@@ -10,7 +11,6 @@ use crate::views::task_instance_capture::TaskInstanceCaptureItem;
 use anyhow::Context;
 use axum_valid::Valid;
 use chrono::Local;
-use futures_util::StreamExt;
 use itertools::Itertools;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, PaginatorTrait,
@@ -24,7 +24,6 @@ use summer::config::ConfigRegistry;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
 use summer_redis::config::RedisConfig;
-use summer_redis::redis;
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use summer_sqlx::sqlx;
 use summer_sqlx::ConnectPool;
@@ -462,7 +461,7 @@ async fn update_task_schedule_info(
 /// # 某次任务实例的执行日志（SSE）
 ///
 /// - 若 `task_instance.log_key` 已写入且服务端 `[s3]` 配置完整：从对象存储拉取 NDJSON，按行推送后结束连接（不订阅 Redis）。
-/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送。
+/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送（见 [`crate::task_instance_logs_sse`]）。
 #[get("/task/{task_id}/instance/{instance_id}/logs")]
 async fn task_instance_logs(
     opt_claims: OptionalClaims,
@@ -503,70 +502,15 @@ async fn task_instance_logs(
                 KnownWebError::internal_server_error(format!("读取归档日志失败：{e}"))
             })?;
         let body = String::from_utf8_lossy(&bytes).into_owned();
-        let (tx, rx) = tokio::sync::mpsc::channel::<std::result::Result<Event, Infallible>>(64);
-        tokio::spawn(async move {
-            for line in body.lines() {
-                let t = line.trim_end();
-                if t.is_empty() {
-                    continue;
-                }
-                if tx.send(Ok(Event::default().data(t))).await.is_err() {
-                    break;
-                }
-            }
-        });
-        return Ok(Sse::new(ReceiverStream::new(rx)));
+        return Ok(open_archive_ndjson_sse(body));
     }
 
-    let config = app
+    let redis_cfg = app
         .get_config::<RedisConfig>()
         .map_err(|e| KnownWebError::internal_server_error(format!("读取Redis配置失败: {e}")))?;
 
-    let channel = format!("task:{task_id}:{instance_id}:logs");
-    let (tx, rx) = tokio::sync::mpsc::channel::<std::result::Result<Event, Infallible>>(100);
-
-    tokio::spawn(async move {
-        let client = match redis::Client::open(config.uri.clone()) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::error!("Redis client创建失败: {e}");
-                return;
-            }
-        };
-        let mut pubsub = match client.get_async_pubsub().await {
-            Ok(ps) => ps,
-            Err(e) => {
-                tracing::error!("Redis pubsub连接失败: {e}");
-                return;
-            }
-        };
-        if let Err(e) = pubsub.subscribe(&channel).await {
-            tracing::error!(%channel, "Redis订阅失败: {e}");
-            return;
-        }
-
-        let mut msg_stream = pubsub.on_message();
-        let mut check_interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
-
-        loop {
-            tokio::select! {
-                Some(msg) = msg_stream.next() => {
-                    let payload: String = msg.get_payload::<String>().unwrap_or_default();
-                    let event = Event::default().data(payload);
-                    if tx.send(Ok(event)).await.is_err() {
-                        break;
-                    }
-                }
-                _ = check_interval.tick() => {
-                    if tx.is_closed() {
-                        break;
-                    }
-                }
-            }
-        }
-    });
-
-    Ok(Sse::new(ReceiverStream::new(rx)))
+    let channel = redis_pubsub_channel(task_id, instance_id);
+    Ok(open_redis_pubsub_log_sse(redis_cfg.uri.clone(), channel))
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
