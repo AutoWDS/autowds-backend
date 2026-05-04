@@ -12,6 +12,7 @@ use summer_job::JobPlugin;
 use summer_mail::MailPlugin;
 use summer_redis::RedisPlugin;
 use summer_sea_orm::SeaOrmPlugin;
+use summer_sqlx::SqlxPlugin;
 use summer_web::{WebConfigurator, WebPlugin};
 use utils::pay_plugin::PayPlugin;
 
@@ -20,6 +21,7 @@ async fn main() {
     App::new()
         .add_plugin(WebPlugin)
         .add_plugin(SeaOrmPlugin)
+        .add_plugin(SqlxPlugin)
         .add_plugin(MailPlugin)
         .add_plugin(RedisPlugin)
         .add_plugin(JobPlugin)

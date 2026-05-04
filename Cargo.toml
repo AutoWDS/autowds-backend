@@ -20,6 +20,12 @@ summer-sea-orm = { version = "0.5.0-rc.0", features = [
     "with-web",
     "with-web-openapi",
 ] }
+summer-sqlx = { version = "0.5.0", default-features = false, features = [
+    "postgres",
+    "runtime-tokio-native-tls",
+    "with-chrono",
+    "with-json",
+] }
 sea-orm = { version = "2.0.0-rc", features = ["with-ipnetwork"] }
 serde = "1.0"
 serde_json = "1.0"

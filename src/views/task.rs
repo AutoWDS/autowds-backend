@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use validator::Validate;
 
-use crate::model::scraper_task::ScheduleData;
+use crate::model::scraper_task::ScraperTaskData;
 
 /// # 任务查询请求
 #[derive(Debug, Deserialize, Validate, JsonSchema)]
@@ -24,9 +24,9 @@ pub struct ScraperTaskReq {
     #[validate(length(max = 80, message = "查询名称过长"))]
     pub name: String,
 
-    /// # 数据
+    /// # 任务级配置（调度 + 数据质量等，见 [`ScraperTaskData`]）
     #[serde(default)]
-    pub data: Option<ScheduleData>,
+    pub data: Option<ScraperTaskData>,
 
     /// # 任务规则定义
     #[serde(default)]
@@ -37,7 +37,7 @@ pub struct ScraperTaskReq {
 #[derive(Debug, Deserialize, Validate, JsonSchema)]
 pub struct ScraperUpdateTaskReq {
     #[serde(default)]
-    pub data: Option<ScheduleData>,
+    pub data: Option<ScraperTaskData>,
 
     #[serde(default)]
     pub rule: Value,

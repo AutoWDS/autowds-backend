@@ -26,6 +26,10 @@ public_base_url = "${PUBLIC_BASE_URL:http://127.0.0.1:8080}"
 [sea-orm]
 uri = "${DATABASE_URL:postgres://postgres:xudjf23adj213@localhost:5432/autowds}"
 
+# 与 [sea-orm] 同一库即可（采集记录按 user_id 分表，用 sqlx 拼表名查询）
+[sqlx]
+uri = "${DATABASE_URL:postgres://postgres:xudjf23adj213@localhost:5432/autowds}"
+
 [sea-orm-web]
 one_indexed = true
 

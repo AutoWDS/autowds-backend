@@ -1,16 +1,17 @@
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
 use crate::model::task_instance;
-use crate::model::scraper_task::{self, ScheduleData};
+use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
 use crate::utils::jwt::{Claims, OptionalClaims};
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
+use crate::views::task_instance_capture::TaskInstanceCaptureItem;
 use anyhow::Context;
 use axum_valid::Valid;
 use chrono::Local;
 use futures_util::StreamExt;
 use itertools::Itertools;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, ExprTrait, PaginatorTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, PaginatorTrait,
     QueryFilter, QueryOrder, Set,
 };
 use serde::Deserialize;
@@ -23,8 +24,9 @@ use summer_job::JobScheduler;
 use summer_redis::config::RedisConfig;
 use summer_redis::redis;
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
+use summer_sqlx::sqlx;
+use summer_sqlx::ConnectPool;
 use summer_web::axum::response::sse::{Event, Sse};
-use summer_web::axum::response::IntoResponse;
 use summer_web::axum::Json;
 use summer_web::error::{KnownWebError, Result};
 use summer_web::extractor::{AppRef, Component, Path, Query};
@@ -309,9 +311,56 @@ async fn update_task_name(
     Ok(Json(task.id))
 }
 
-// #[patch_api("/task/{id}/cron")]
-async fn update_task_cron() -> Result<impl IntoResponse> {
-    Ok("")
+/// # 仅更新 cron 表达式（须已有 `data.schedule`；与 `PATCH /task/{id}/schedule` 相比不改 `proxyId` / `type`）
+/// @tag task
+///
+/// 请求体为 JSON 字符串，例如 `"0 0 * * * *"`（与前端 `JSON.stringify(cron)` 一致）。
+#[patch_api("/task/{id}/cron")]
+async fn update_task_cron(
+    claims: Claims,
+    Path(id): Path<i64>,
+    Component(db): Component<DbConn>,
+    Component(sched): Component<JobScheduler>,
+    AppRef(app): AppRef,
+    Json(cron): Json<String>,
+) -> Result<Json<i64>> {
+    let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    let cron_trim = cron.trim();
+    if cron_trim.is_empty() {
+        Err(KnownWebError::bad_request("cron 不能为空"))?;
+    }
+
+    let mut new_data = task
+        .data
+        .clone()
+        .ok_or_else(|| {
+            KnownWebError::bad_request(
+                "任务尚未配置 data，请先使用 PATCH /task/{id}/schedule 配置调度",
+            )
+        })?;
+
+    let schedule = new_data.schedule.as_mut().ok_or_else(|| {
+        KnownWebError::bad_request(
+            "任务尚未包含 schedule，请先使用 PATCH /task/{id}/schedule 提交完整调度配置",
+        )
+    })?;
+
+    schedule.cron = cron_trim.to_string();
+
+    let new_job_id = replace_cron_job(&sched, app, &task, cron_trim).await?;
+
+    scraper_task::ActiveModel {
+        id: Set(task.id),
+        data: Set(Some(new_data)),
+        job_id: Set(Some(new_job_id)),
+        ..Default::default()
+    }
+    .save(&db)
+    .await
+    .context("save scraper task failed")?;
+
+    Ok(Json(task.id))
 }
 
 /// # 获取指定任务的调度配置
@@ -323,7 +372,12 @@ async fn get_task_schedule_info(
     Component(db): Component<DbConn>,
 ) -> Result<Json<Option<ScheduleData>>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
-    Ok(Json(task.data))
+    Ok(Json(
+        task
+            .data
+            .as_ref()
+            .and_then(|d| d.schedule.clone()),
+    ))
 }
 
 async fn replace_cron_job(
@@ -352,15 +406,26 @@ async fn update_task_schedule_info(
     Component(db): Component<DbConn>,
     Component(sched): Component<JobScheduler>,
     AppRef(app): AppRef,
-    Json(data): Json<ScheduleData>,
+    Json(schedule): Json<ScheduleData>,
 ) -> Result<Json<i64>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
 
-    let new_job_id = replace_cron_job(&sched, app, &task, &data.cron).await?;
+    let new_job_id = replace_cron_job(&sched, app, &task, &schedule.cron).await?;
+
+    let new_data = match task.data {
+        Some(mut env) => {
+            env.schedule = Some(schedule);
+            Some(env)
+        }
+        None => Some(ScraperTaskData {
+            schedule: Some(schedule),
+            data_quality: None,
+        }),
+    };
 
     scraper_task::ActiveModel {
         id: Set(task.id),
-        data: Set(Some(data)),
+        data: Set(new_data),
         job_id: Set(Some(new_job_id)),
         ..Default::default()
     }
@@ -455,4 +520,119 @@ async fn query_task_instances(
         .context("query task instances failed")?;
 
     Ok(Json(page))
+}
+
+fn task_instance_record_shard_table(user_id: i64) -> Option<String> {
+    if user_id <= 0 {
+        return None;
+    }
+    let name = format!("task_instance_record_{user_id}");
+    if name.chars().all(|c| {
+        c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_'
+    }) {
+        Some(name)
+    } else {
+        None
+    }
+}
+
+fn is_pg_undefined_table(e: &summer_sqlx::sqlx::Error) -> bool {
+    match e {
+        summer_sqlx::sqlx::Error::Database(db) => db.code().is_some_and(|c| c == "42P01"),
+        _ => false,
+    }
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+struct TaskInstanceCaptureQuery {
+    #[serde(rename = "taskId")]
+    task_id: i64,
+    #[serde(rename = "instanceId")]
+    instance_id: i64,
+}
+
+/// # 查询某次任务实例的采集记录（按用户分表 `task_instance_record_{userId}`，sqlx）
+/// @tag task
+#[get_api("/instance/data")]
+async fn query_instance_capture_records(
+    claims: Claims,
+    Query(q): Query<TaskInstanceCaptureQuery>,
+    Component(db): Component<DbConn>,
+    Component(pool): Component<ConnectPool>,
+    pagination: Pagination,
+) -> Result<Json<Page<TaskInstanceCaptureItem>>> {
+    let uid = claims.uid;
+    let Some(table) = task_instance_record_shard_table(uid) else {
+        return Ok(Json(pagination.empty_page()));
+    };
+
+    ScraperTask::find_check_task(&db, q.task_id, uid).await?;
+
+    let inst = TaskInstance::find_by_id(q.instance_id)
+        .one(&db)
+        .await
+        .context("查询 task_instance 失败")?
+        .ok_or_else(|| KnownWebError::not_found("实例不存在"))?;
+    if inst.task_id != q.task_id {
+        return Err(KnownWebError::forbidden("无权访问该实例"))?;
+    }
+
+    let count_sql = format!(
+        "SELECT COUNT(*)::bigint AS c FROM {table} WHERE task_id = $1 AND task_instance_id = $2"
+    );
+
+    let count: i64 = match sqlx::query_scalar(&count_sql)
+        .bind(q.task_id)
+        .bind(q.instance_id)
+        .fetch_one(&pool)
+        .await
+    {
+        Ok(n) => n,
+        Err(e) => {
+            if is_pg_undefined_table(&e) {
+                return Ok(Json(Page::new(vec![], &pagination, 0)));
+            }
+            return Err(e).context("统计采集记录失败")?;
+        }
+    };
+
+    let total = std::cmp::max(count, 0i64) as u64;
+    let offset_i64 = i64::try_from(pagination.page.saturating_mul(pagination.size))
+        .unwrap_or(i64::MAX);
+    let limit_i64 = i64::try_from(pagination.size).unwrap_or(i64::MAX);
+
+    let select_sql = format!(
+        "SELECT id, task_id, task_instance_id, dedupe_rule_version, dedupe_key, payload, created_at \
+         FROM {table} \
+         WHERE task_id = $1 AND task_instance_id = $2 \
+         ORDER BY id ASC \
+         LIMIT $3 OFFSET $4"
+    );
+
+    let rows = match sqlx::query(&select_sql)
+        .bind(q.task_id)
+        .bind(q.instance_id)
+        .bind(limit_i64)
+        .bind(offset_i64)
+        .fetch_all(&pool)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            if is_pg_undefined_table(&e) {
+                return Ok(Json(Page::new(vec![], &pagination, 0)));
+            }
+            return Err(e).context("查询采集记录失败")?;
+        }
+    };
+
+    let mut content = Vec::with_capacity(rows.len());
+    for row in rows {
+        content.push(
+            TaskInstanceCaptureItem::try_from_row(&row)
+                .context("解析采集记录行失败")?,
+        );
+    }
+
+    Ok(Json(Page::new(content, &pagination, total)))
 }

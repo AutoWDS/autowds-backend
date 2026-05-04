@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::model::scraper_task::ScheduleData;
+use crate::model::scraper_task::ScraperTaskData;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, JsonSchema)]
 #[sea_orm(table_name = "scraper_task")]
@@ -17,7 +17,7 @@ pub struct Model {
     pub deleted: bool,
     pub name: String,
     #[sea_orm(column_type = "JsonBinary")]
-    pub data: Option<ScheduleData>,
+    pub data: Option<ScraperTaskData>,
     #[sea_orm(column_type = "JsonBinary")]
     pub rule: Json,
     #[schemars(skip)]

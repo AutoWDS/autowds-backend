@@ -91,6 +91,9 @@ pub fn recover_task_schedules(
             let Some(data) = &task.data else {
                 continue;
             };
+            let Some(ref schedule_data) = data.schedule else {
+                continue;
+            };
 
             // 先移除旧的调度（闭包已丢失，元数据可能在 Postgres 中残留）
             if let Some(old_job_id) = task.job_id {
@@ -100,7 +103,7 @@ pub fn recover_task_schedules(
             }
 
             // 重新注册调度
-            let job = Job::cron_with_data(&data.cron, task.id)
+            let job = Job::cron_with_data(&schedule_data.cron, task.id)
                 .run(dispatch_task)
                 .build(app.clone());
 

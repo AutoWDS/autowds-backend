@@ -26,6 +26,28 @@ pub struct ScheduleData {
     pub ty: ScheduleType,
 }
 
+/// 落库在 `scraper_task.data` 一列：调度 + 数据质量等任务级配置（信封结构）。
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ScraperTaskData {
+    /// 未配置调度时可为空，仅保留 `data_quality` 等配置。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<ScheduleData>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_quality: Option<DataQualityConfig>,
+}
+
+/// 数据质量 / 去重等与调度无关的配置；随 `dedupe_rule_version` 变更可换规则而不污染历史行语义。
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataQualityConfig {
+    #[serde(default)]
+    pub dedupe_rule_version: u32,
+    /// 参与规范化去重材料的 JSON 路径（相对每条采集记录的根对象），如 `["url"]` 或 `["siteId","sku"]`。
+    #[serde(default)]
+    pub dedupe_json_paths: Vec<String>,
+}
+
 #[async_trait]
 impl ActiveModelBehavior for ActiveModel {
     async fn before_save<C>(mut self, _db: &C, insert: bool) -> Result<Self, DbErr>

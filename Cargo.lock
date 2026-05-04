@@ -736,6 +736,7 @@ dependencies = [
  "summer-mail",
  "summer-redis",
  "summer-sea-orm",
+ "summer-sqlx",
  "summer-web",
  "tokio",
  "tokio-stream",
@@ -6333,6 +6334,24 @@ dependencies = [
  "summer-web",
  "thiserror 2.0.17",
  "tracing",
+]
+
+[[package]]
+name = "summer-sqlx"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eec4d36f291439c4d8a4d2e64cc7e1eebd05455e6d4f5cae73f9d2561c9339"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "schemars 1.2.0",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "summer",
+ "time",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
