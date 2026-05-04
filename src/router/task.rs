@@ -114,6 +114,13 @@ async fn add_task(
     // 检查任务数量限制
     check_task_limit(&db, claims.uid, Some(user.edition)).await?;
 
+    let mut body = body;
+    if let Some(ref mut d) = body.data {
+        if let Some(ref mut dq) = d.data_quality {
+            scraper_task::apply_data_quality_dedupe_version(None, dq);
+        }
+    }
+
     let task = scraper_task::ActiveModel {
         user_id: Set(claims.uid),
         name: Set(body.name),
@@ -167,15 +174,22 @@ async fn add_batch_task(
     let now = Local::now().naive_local();
     let batch = batch
         .into_iter()
-        .map(|m| scraper_task::ActiveModel {
-            user_id: Set(claims.uid),
-            name: Set(m.name),
-            data: Set(m.data),
-            rule: Set(m.rule),
-            created: Set(now),
-            modified: Set(now),
-            deleted: Set(false),
-            ..Default::default()
+        .map(|mut m| {
+            if let Some(ref mut d) = m.data {
+                if let Some(ref mut dq) = d.data_quality {
+                    scraper_task::apply_data_quality_dedupe_version(None, dq);
+                }
+            }
+            scraper_task::ActiveModel {
+                user_id: Set(claims.uid),
+                name: Set(m.name),
+                data: Set(m.data),
+                rule: Set(m.rule),
+                created: Set(now),
+                modified: Set(now),
+                deleted: Set(false),
+                ..Default::default()
+            }
         })
         .collect_vec();
     let r = ScraperTask::insert_many(batch)
@@ -238,6 +252,13 @@ async fn update_task(
     Valid(Json(body)): Valid<Json<ScraperUpdateTaskReq>>,
 ) -> Result<Json<scraper_task::Model>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
+
+    let mut body = body;
+    if let Some(ref mut d) = body.data {
+        if let Some(ref mut dq) = d.data_quality {
+            scraper_task::apply_data_quality_dedupe_version(task.data.as_ref(), dq);
+        }
+    }
 
     scraper_task::ActiveModel {
         id: Set(task.id),
