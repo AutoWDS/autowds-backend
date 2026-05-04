@@ -1,6 +1,7 @@
 mod config;
 mod model;
 mod router;
+mod s3_task_log;
 mod service;
 mod task;
 mod utils;

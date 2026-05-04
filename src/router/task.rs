@@ -1,4 +1,6 @@
+use crate::config::s3::TaskLogS3Config;
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
+use crate::s3_task_log::fetch_archived_task_log_bytes;
 use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
@@ -457,18 +459,70 @@ async fn update_task_schedule_info(
     Ok(Json(task.id))
 }
 
-/// # 订阅任务执行日志（SSE）
-#[get("/task/{id}/logs")]
-async fn task_logs(
+/// # 某次任务实例的执行日志（SSE）
+///
+/// - 若 `task_instance.log_key` 已写入且服务端 `[s3]` 配置完整：从对象存储拉取 NDJSON，按行推送后结束连接（不订阅 Redis）。
+/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送。
+#[get("/task/{task_id}/instance/{instance_id}/logs")]
+async fn task_instance_logs(
     opt_claims: OptionalClaims,
-    Path(id): Path<i64>,
+    Path((task_id, instance_id)): Path<(i64, i64)>,
+    Component(db): Component<DbConn>,
     AppRef(app): AppRef,
 ) -> Result<Sse<ReceiverStream<std::result::Result<Event, Infallible>>>> {
-    let _claims = opt_claims.get()?;
+    let claims = opt_claims.get()?;
+    ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
+
+    let inst = TaskInstance::find_by_id(instance_id)
+        .one(&db)
+        .await
+        .context("查询 task_instance 失败")?
+        .ok_or_else(|| KnownWebError::not_found("实例不存在"))?;
+    if inst.task_id != task_id {
+        return Err(KnownWebError::bad_request("实例与任务不匹配"))?;
+    }
+
+    if let Some(log_key) = inst
+        .log_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|k| !k.is_empty())
+    {
+        let s3_cfg = app.get_config::<TaskLogS3Config>().map_err(|e| {
+            KnownWebError::internal_server_error(format!("读取 [s3] 配置失败：{e}"))
+        })?;
+        if !s3_cfg.is_configured() {
+            return Err(KnownWebError::internal_server_error(
+                "实例已写入归档键 log_key，但服务端 [s3] 未配置完整，无法从对象存储读取日志",
+            ))?;
+        }
+        let bytes = fetch_archived_task_log_bytes(&s3_cfg, log_key)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, %log_key, "S3 GetObject 任务归档日志失败");
+                KnownWebError::internal_server_error(format!("读取归档日志失败：{e}"))
+            })?;
+        let body = String::from_utf8_lossy(&bytes).into_owned();
+        let (tx, rx) = tokio::sync::mpsc::channel::<std::result::Result<Event, Infallible>>(64);
+        tokio::spawn(async move {
+            for line in body.lines() {
+                let t = line.trim_end();
+                if t.is_empty() {
+                    continue;
+                }
+                if tx.send(Ok(Event::default().data(t))).await.is_err() {
+                    break;
+                }
+            }
+        });
+        return Ok(Sse::new(ReceiverStream::new(rx)));
+    }
+
     let config = app
         .get_config::<RedisConfig>()
         .map_err(|e| KnownWebError::internal_server_error(format!("读取Redis配置失败: {e}")))?;
 
+    let channel = format!("task:{task_id}:{instance_id}:logs");
     let (tx, rx) = tokio::sync::mpsc::channel::<std::result::Result<Event, Infallible>>(100);
 
     tokio::spawn(async move {
@@ -486,8 +540,8 @@ async fn task_logs(
                 return;
             }
         };
-        if let Err(e) = pubsub.subscribe(format!("task:{id}:logs")).await {
-            tracing::error!("Redis订阅失败: {e}");
+        if let Err(e) = pubsub.subscribe(&channel).await {
+            tracing::error!(%channel, "Redis订阅失败: {e}");
             return;
         }
 

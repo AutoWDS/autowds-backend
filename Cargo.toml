@@ -61,5 +61,17 @@ sha2 = "0.11.0"
 hex = "0.4.3"
 subtle = "2.6.1"
 
+# 与 autowds-instance 一致：按 task_instance.log_key 读取归档 NDJSON
+aws-config = { version = "1.8", default-features = false, features = [
+    "behavior-version-latest",
+    "rt-tokio",
+    "rustls",
+] }
+aws-credential-types = "1"
+aws-sdk-s3 = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "rustls",
+] }
+
 [patch.crates-io]
 axum-valid = { git = "https://github.com/holmofy/axum-valid", branch = "patch-1" }

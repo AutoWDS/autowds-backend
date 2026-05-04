@@ -33,6 +33,15 @@ uri = "${DATABASE_URL:postgres://postgres:xudjf23adj213@localhost:5432/autowds}"
 [sea-orm-web]
 one_indexed = true
 
+# 与 autowds-instance `[s3]` 一致；`task_instance.log_key` 存在时，任务日志 SSE 会优先 GetObject 回放 NDJSON，不再订阅 Redis。
+[s3]
+endpoint = "${S3_ENDPOINT:}"
+bucket = "${S3_BUCKET:}"
+access_key_id = "${S3_ACCESS_KEY_ID:}"
+secret_access_key = "${S3_SECRET_ACCESS_KEY:}"
+region = "${S3_REGION:us-east-1}"
+prefix = "${S3_PREFIX:}"
+
 [redis]
 uri = "${REDIS_URL:redis://localhost}"
 
