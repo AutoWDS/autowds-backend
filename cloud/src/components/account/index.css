@@ -1,0 +1,67 @@
+.form-logo-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.form-logo-wrap svg {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+.form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 240px;
+  margin: 0 auto;
+}
+
+.form .ant-space .ant-space-item .ant-form-item {
+  margin-bottom: 0;
+  position: relative;
+}
+
+.form .ant-space .ant-space-item .ant-form-item .ant-form-item-explain-error {
+  color: white;
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  margin-right: 8px;
+  background: black;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.form
+  .ant-space
+  .ant-space-item
+  .ant-form-item:hover
+  .ant-form-item-explain-error {
+  display: block;
+}
+
+.form
+  .ant-space
+  .ant-space-item
+  .ant-form-item
+  .ant-form-item-explain-error:after {
+  content: ' ';
+  display: block;
+  background: black;
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.no-error-tip .ant-form-item-explain-error {
+  display: none !important;
+}

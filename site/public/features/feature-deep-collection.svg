@@ -1,0 +1,183 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      /* 基础样式 */
+      .bg { fill: #f8f9fa; }
+      .card { fill: #ffffff; stroke: #e0e0e0; stroke-width: 1; rx: 8; }
+      .header-bar { fill: #ffffff; }
+      .skeleton-rect { fill: #e9ecef; rx: 4; }
+      .skeleton-blue { fill: #d1e3ff; rx: 2; }
+      .icon { fill: #6c757d; }
+      .text-label { fill: #495057; font-family: sans-serif; font-size: 14px; font-weight: bold; }
+      .text-label-type { fill: #adb5bd; }
+      .field-frame { fill: rgba(209, 227, 255, 0.45); stroke: #6ea8fe; stroke-width: 1.5; }
+      
+      /* 动画定义：单场景周期 6s，infinite 循环（原时间线：2s 网格 → 0.3s 淡出 → 详情渐入与列表错开） */
+      @keyframes gridViewLoop {
+        0%, 33.33% { opacity: 1; visibility: visible; }
+        38.33%, 100% { opacity: 0; visibility: hidden; }
+      }
+      @keyframes detailViewLoop {
+        0%, 36.67% { opacity: 0; }
+        41.67%, 100% { opacity: 1; }
+      }
+      @keyframes slideInLoop1 {
+        0%, 40% { transform: translateY(10px); opacity: 0; }
+        46.67%, 100% { transform: translateY(0); opacity: 1; }
+      }
+      @keyframes slideInLoop2 {
+        0%, 43.33% { transform: translateY(10px); opacity: 0; }
+        50%, 100% { transform: translateY(0); opacity: 1; }
+      }
+      @keyframes slideInLoop3 {
+        0%, 46.67% { transform: translateY(10px); opacity: 0; }
+        53.33%, 100% { transform: translateY(0); opacity: 1; }
+      }
+
+      .grid-view {
+        animation: gridViewLoop 6s ease-in-out infinite;
+      }
+
+      .detail-view {
+        opacity: 0;
+        animation: detailViewLoop 6s ease-in-out infinite;
+      }
+
+      .detail-item {
+        opacity: 0;
+      }
+      .detail-item-1 { animation: slideInLoop1 6s ease-out infinite; }
+      .detail-item-2 { animation: slideInLoop2 6s ease-out infinite; }
+      .detail-item-3 { animation: slideInLoop3 6s ease-out infinite; }
+
+      /* 详情字段与表格列联动（竖线 + 列底纹 + 折线），与列表入场结束后衔接 */
+      @keyframes linkLayerFade {
+        0%, 52% { opacity: 0; }
+        56%, 100% { opacity: 1; }
+      }
+      @keyframes dividerLinkFade {
+        0%, 52% { stroke: #e0e0e0; stroke-width: 1; }
+        56%, 100% { stroke: #8ab4f8; stroke-width: 2; }
+      }
+      .connector-layer {
+        pointer-events: none;
+        animation: linkLayerFade 6s ease-in-out infinite;
+      }
+      .table-link-layer {
+        pointer-events: none;
+        animation: linkLayerFade 6s ease-in-out infinite;
+      }
+      .col-divider {
+        animation: dividerLinkFade 6s ease-in-out infinite;
+      }
+      /* 三列映射标题：待详情三行框选入场结束后再一起显示 */
+      @keyframes mappedColumnLabelsFade {
+        0%, 53% { opacity: 0; visibility: hidden; }
+        56%, 100% { opacity: 1; visibility: visible; }
+      }
+      .mapped-column-labels {
+        opacity: 0;
+        visibility: hidden;
+        animation: mappedColumnLabelsFade 6s ease-in-out infinite;
+      }
+    </style>
+  </defs>
+
+  <rect width="800" height="600" class="bg" />
+
+  <rect width="800" height="60" class="header-bar" />
+  <circle cx="30" cy="30" r="6" fill="#dee2e6" />
+  <circle cx="55" cy="30" r="6" fill="#dee2e6" />
+  <rect x="80" y="20" width="400" height="20" rx="10" fill="#e9ecef" />
+  <rect x="25" y="80" width="150" height="20" class="skeleton-rect" />
+
+  <g class="grid-view">
+    <g transform="translate(150, 150)">
+      <rect width="120" height="150" class="skeleton-rect" opacity="0.3" />
+      <rect x="10" y="160" width="100" height="10" class="skeleton-blue" />
+      <rect x="10" y="180" width="60" height="10" class="skeleton-blue" />
+    </g>
+    <g transform="translate(300, 150)">
+      <rect width="120" height="150" class="skeleton-rect" opacity="0.3" />
+      <rect x="10" y="160" width="100" height="10" class="skeleton-blue" />
+      <rect x="10" y="180" width="60" height="10" class="skeleton-blue" />
+    </g>
+    <g transform="translate(450, 150)">
+      <rect width="120" height="150" class="skeleton-rect" opacity="0.3" />
+      <rect x="10" y="160" width="100" height="10" class="skeleton-blue" />
+      <rect x="10" y="180" width="60" height="10" class="skeleton-blue" />
+    </g>
+    <g transform="translate(600, 150)">
+      <rect width="120" height="150" class="skeleton-rect" opacity="0.3" />
+      <rect x="10" y="160" width="100" height="10" class="skeleton-blue" />
+      <rect x="10" y="180" width="60" height="10" class="skeleton-blue" />
+    </g>
+  </g>
+
+  <g class="detail-view">
+    <rect x="150" y="150" width="180" height="220" class="skeleton-rect" opacity="0.3" />
+    
+    <g transform="translate(360, 150)">
+      <rect width="200" height="20" class="skeleton-rect" />
+      <rect y="35" width="120" height="12" class="skeleton-rect" opacity="0.5" />
+      
+      <!-- 外层保留 SVG transform，内层再做 CSS translateY，避免覆盖纵向错位导致重叠 -->
+      <g transform="translate(0, 70)">
+        <g class="detail-item detail-item-1">
+          <rect x="-6" y="-2" width="198" height="24" rx="4" class="field-frame" />
+          <path d="M0 5h15v10H0z" class="icon" />
+          <rect x="25" y="4" width="150" height="12" class="skeleton-blue" />
+        </g>
+      </g>
+      <g transform="translate(0, 100)">
+        <g class="detail-item detail-item-2">
+          <rect x="-6" y="-2" width="228" height="24" rx="4" class="field-frame" />
+          <path d="M0 5h15v10H0z" class="icon" />
+          <rect x="25" y="4" width="180" height="12" class="skeleton-blue" />
+        </g>
+      </g>
+      <g transform="translate(0, 130)">
+        <g class="detail-item detail-item-3">
+          <rect x="-6" y="-2" width="258" height="24" rx="4" class="field-frame" />
+          <path d="M0 5h15v10H0z" class="icon" />
+          <rect x="25" y="4" width="220" height="12" class="skeleton-blue" />
+        </g>
+      </g>
+      
+      <rect y="170" width="300" height="8" class="skeleton-rect" opacity="0.3" />
+      <rect y="185" width="280" height="8" class="skeleton-rect" opacity="0.3" />
+    </g>
+  </g>
+
+  <g transform="translate(0, 420)">
+    <rect width="800" height="180" fill="#ffffff" stroke="#e0e0e0" />
+    <g class="table-link-layer">
+      <rect x="200" y="0" width="200" height="180" fill="#d1e3ff" opacity="0.22" />
+      <rect x="400" y="0" width="200" height="180" fill="#d1e3ff" opacity="0.22" />
+      <rect x="600" y="0" width="200" height="180" fill="#d1e3ff" opacity="0.22" />
+    </g>
+    <line x1="0" y1="45" x2="800" y2="45" stroke="#e0e0e0" />
+    
+    <text x="25" y="30" class="text-label"><tspan class="text-label-type">Aa</tspan><tspan> Full Name</tspan></text>
+    <g class="mapped-column-labels">
+      <text x="225" y="30" class="text-label"><tspan class="text-label-type">@</tspan><tspan> Email Address</tspan></text>
+      <text x="425" y="30" class="text-label"><tspan class="text-label-type">📞</tspan><tspan> Phone Number</tspan></text>
+      <text x="625" y="30" class="text-label"><tspan class="text-label-type">Aa</tspan><tspan> Office Location</tspan></text>
+    </g>
+    
+    <rect x="25" y="65" width="150" height="15" class="skeleton-rect" opacity="0.4" />
+    <rect x="25" y="100" width="150" height="15" class="skeleton-rect" opacity="0.4" />
+    <rect x="25" y="135" width="150" height="15" class="skeleton-rect" opacity="0.4" />
+    
+    <line class="col-divider" x1="200" y1="0" x2="200" y2="180" stroke="#e0e0e0" />
+    <line class="col-divider" x1="400" y1="0" x2="400" y2="180" stroke="#e0e0e0" />
+    <line class="col-divider" x1="600" y1="0" x2="600" y2="180" stroke="#e0e0e0" />
+  </g>
+
+  <!-- Email / Phone / Office 三字段 → 列中心约 x=300,500,700；折线在列表动画后出现 -->
+  <g class="connector-layer" fill="none" stroke="#6ea8fe" stroke-width="1.5" stroke-linejoin="round" opacity="0">
+    <path d="M535 230 L535 330 L300 330 L300 420" />
+    <path d="M565 260 L565 350 L500 350 L500 420" />
+    <path d="M605 290 L605 370 L700 370 L700 420" />
+  </g>
+</svg>

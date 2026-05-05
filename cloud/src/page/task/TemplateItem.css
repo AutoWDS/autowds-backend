@@ -1,0 +1,9 @@
+.ant-list-item.list-item {
+  background: white;
+  border-radius: 8px;
+  padding: 12px !important;
+  margin-bottom: 8px;
+}
+.ant-list-item.list-item-card {
+  margin-block-end: 8px !important;
+}

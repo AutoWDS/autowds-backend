@@ -1,7 +1,7 @@
 use crate::config::s3::TaskLogS3Config;
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
-use crate::s3_task_log::{decode_archived_task_log_ndjson, fetch_archived_task_log_bytes};
-use crate::task_instance_logs_sse::{open_archive_ndjson_sse, open_redis_pubsub_log_sse, redis_pubsub_channel};
+use crate::task_log::s3::{decode_archived_task_log_ndjson, fetch_archived_task_log_bytes};
+use crate::task_log::sse::{open_archive_ndjson_sse, open_redis_pubsub_log_sse, redis_pubsub_channel};
 use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
@@ -33,6 +33,7 @@ use summer_web::error::{KnownWebError, Result};
 use summer_web::extractor::{AppRef, Component, Path, Query};
 use summer_web::{delete_api, get, get_api, patch_api, post_api, put_api};
 use tokio_stream::wrappers::ReceiverStream;
+use crate::service::user::UserService;
 
 /// 检查用户任务数量限制
 async fn check_task_limit(
@@ -103,6 +104,7 @@ async fn query_task(
 async fn add_task(
     claims: Claims,
     Component(db): Component<DbConn>,
+    Component(us): Component<UserService>,
     Valid(Json(body)): Valid<Json<ScraperTaskReq>>,
 ) -> Result<Json<scraper_task::Model>> {
     // 获取用户信息以检查版本级别
@@ -111,6 +113,11 @@ async fn add_task(
         .await
         .context("find user failed")?
         .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    let user = us
+        .refresh_user_membership(user)
+        .await
+        .context("refresh membership failed")?;
 
     // 检查任务数量限制
     check_task_limit(&db, claims.uid, Some(user.edition)).await?;
@@ -141,6 +148,7 @@ async fn add_task(
 async fn add_batch_task(
     claims: Claims,
     Component(db): Component<DbConn>,
+    Component(us): Component<UserService>,
     Valid(Json(batch)): Valid<Json<Vec<ScraperTaskReq>>>,
 ) -> Result<Json<i64>> {
     if batch.len() > 10 {
@@ -153,6 +161,11 @@ async fn add_batch_task(
         .await
         .context("find user failed")?
         .ok_or_else(|| KnownWebError::not_found("用户不存在"))?;
+
+    let user = us
+        .refresh_user_membership(user)
+        .await
+        .context("refresh membership failed")?;
 
     // 检查当前任务数量
     let current_count = ScraperTask::find()
@@ -461,7 +474,7 @@ async fn update_task_schedule_info(
 /// # 某次任务实例的执行日志（SSE）
 ///
 /// - 若 `task_instance.log_key` 已写入且服务端 `[s3]` 配置完整：从对象存储拉取 NDJSON，按行推送后结束连接（不订阅 Redis）。
-/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送（见 [`crate::task_instance_logs_sse`]）。
+/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送（见 [`crate::task_log::sse`]）。
 #[get("/task/{task_id}/instance/{instance_id}/logs")]
 async fn task_instance_logs(
     opt_claims: OptionalClaims,

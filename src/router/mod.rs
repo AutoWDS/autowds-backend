@@ -37,10 +37,10 @@ pub fn router() -> Router {
         Env::Dev => {
             let home_dir =
                 ServeDir::new("site/out").not_found_service(ServeFile::new("site/out/index.html"));
-            let cloud_dir = ServeDir::new("frontend/build")
-                .not_found_service(ServeFile::new("frontend/build/index.html"));
-            let admin_dir = ServeDir::new("backend/dist")
-                .not_found_service(ServeFile::new("backend/dist/index.html"));
+            let cloud_dir = ServeDir::new("cloud/build")
+                .not_found_service(ServeFile::new("cloud/build/index.html"));
+            let admin_dir = ServeDir::new("admin/dist")
+                .not_found_service(ServeFile::new("admin/dist/index.html"));
             router
                 .nest_service("/cloud/", cloud_dir)
                 .nest_service("/admin/", admin_dir)

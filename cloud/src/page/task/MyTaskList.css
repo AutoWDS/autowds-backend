@@ -1,0 +1,33 @@
+.name-indent {
+  padding-left: 8px;
+}
+.cron {
+  user-select: none;
+  cursor: pointer;
+  color: #aaa;
+}
+@keyframes slideToRight {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(10%);
+  }
+}
+
+.task-running {
+  overflow: hidden;
+}
+
+.task-running:before {
+  content: ' ';
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(to right, #1677ff00, #1677ff80);
+  animation: slideToRight 1.5s infinite;
+}

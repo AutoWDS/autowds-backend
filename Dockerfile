@@ -1,14 +1,14 @@
-############### frontend builder
-FROM node:20 as frontend_builder
+############### cloud builder
+FROM node:20 as cloud_builder
 
 WORKDIR /build
 
-COPY frontend/package.json frontend/package-lock.json ./
+COPY cloud/package.json cloud/package-lock.json ./
 
 # cache node_modules dependencies
 RUN npm install
 
-COPY frontend /build/
+COPY cloud /build/
 
 RUN npm run build
 
@@ -26,17 +26,17 @@ COPY site /build/
 
 RUN npm run build
 
-############### backend builder
-FROM node:20 as backend_builder
+############### admin builder
+FROM node:20 as admin_builder
 
 WORKDIR /build
 
-COPY backend/package.json backend/package-lock.json ./
+COPY admin/package.json admin/package-lock.json ./
 
 # cache node_modules dependencies
 RUN npm install
 
-COPY backend /build/
+COPY admin /build/
 
 RUN npm run build
 
@@ -74,8 +74,8 @@ ENV RUST_LOG=info
 WORKDIR /runner
 
 COPY --from=site_builder /build/out/ ./static
-COPY --from=frontend_builder /build/build/ ./static/cloud
-COPY --from=backend_builder /build/dist/ ./static/admin
+COPY --from=cloud_builder /build/build/ ./static/cloud
+COPY --from=admin_builder /build/dist/ ./static/admin
 
 COPY --from=builder /build/target/release/autowds-backend ./autowds-backend
 

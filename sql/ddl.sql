@@ -7,6 +7,7 @@ create table if not exists account_user (
     created timestamp not null,
     modified timestamp not null,
     edition product_edition not null,
+    vip_expired_at timestamp null,
     name varchar(32) not null,
     email varchar(64) not null,
     passwd varchar(32) not null,

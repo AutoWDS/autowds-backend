@@ -1,0 +1,7 @@
+.plain-modal .ant-modal-confirm-content {
+  display: flex;
+  justify-content: space-evenly;
+  transform: translateX(-15px);
+  text-align: center;
+  padding-top: 20px;
+}

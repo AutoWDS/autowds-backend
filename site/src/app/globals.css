@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* IconFont */
+.icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  fill: currentColor;
+  overflow: hidden;
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+body> div[data-wechat-close-patched="true"] {
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.25) !important;
+}
+
+/* WeChat chatbot mobile adaptation - keep CSS-only & responsive */
+@media (max-width: 580px) {
+  /* 适配微信对话开放平台 iframe */
+  body> div[data-wechat-close-patched="true"] {
+    inset: auto 0 0 0 !important; /* bottom:0; left/right:0 */
+    min-width: 400px !important;
+    max-width: 500px !important;
+    max-height: 90vh;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, 0);
+  }
+}

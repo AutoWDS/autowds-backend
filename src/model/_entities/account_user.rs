@@ -12,6 +12,8 @@ pub struct Model {
     pub created: DateTime,
     pub modified: DateTime,
     pub edition: ProductEdition,
+    /// 会员到期时间（为空表示未开通过期机制的历史数据/或永久有效）
+    pub vip_expired_at: Option<DateTime>,
     pub name: String,
     #[sea_orm(unique)]
     pub email: String,

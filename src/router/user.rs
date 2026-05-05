@@ -7,6 +7,7 @@ use crate::{
     },
     router::ClientIp,
     service::credit::CreditService,
+    service::user::UserService,
     utils::{
         jwt::{self, Claims},
         mail,
@@ -146,7 +147,11 @@ async fn register(
 /// # 获取当前用户信息
 /// @tag user
 #[get_api("/user")]
-async fn current_user(claims: Claims, Component(db): Component<DbConn>) -> Result<Json<UserResp>> {
+async fn current_user(
+    claims: Claims,
+    Component(db): Component<DbConn>,
+    Component(us): Component<UserService>,
+) -> Result<Json<UserResp>> {
     let user = AccountUser::find_by_id(claims.uid)
         .one(&db)
         .await
@@ -156,6 +161,11 @@ async fn current_user(claims: Claims, Component(db): Component<DbConn>) -> Resul
     if user.email != claims.email {
         Err(KnownWebError::forbidden("Token数据有误"))?;
     }
+
+    let user = us
+        .refresh_user_membership(user)
+        .await
+        .context("refresh membership failed")?;
 
     Ok(Json(UserResp::from(user)))
 }
@@ -350,7 +360,11 @@ async fn export_data(
 /// # 每日签到
 /// @tag user
 #[post_api("/user/check-in")]
-async fn check_in(claims: Claims, Component(db): Component<DbConn>) -> Result<Json<CheckInResp>> {
+async fn check_in(
+    claims: Claims,
+    Component(db): Component<DbConn>,
+    Component(us): Component<UserService>,
+) -> Result<Json<CheckInResp>> {
     use crate::model::credit_log;
     use crate::model::prelude::CreditLog;
     use chrono::{Local, NaiveTime};
@@ -377,6 +391,12 @@ async fn check_in(claims: Claims, Component(db): Component<DbConn>) -> Result<Js
         .await
         .context("查询用户信息失败")?
         .ok_or_else(|| KnownWebError::bad_request("用户不存在"))?;
+
+    // 会员到期则自动降级
+    let user = us
+        .refresh_user_membership(user)
+        .await
+        .context("refresh membership failed")?;
 
     // L0用户签到送1积分，已付费用户送10积分
     let credits = match user.edition {

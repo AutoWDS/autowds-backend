@@ -1,0 +1,324 @@
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="aiScanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0" />
+            <stop offset="50%" stop-color="#3b82f6" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+        </linearGradient>
+    </defs>
+
+    <style>
+        /* 基础样式 */
+        .bg-main {
+            fill: #fff;
+        }
+
+        .bg-sidebar {
+            fill: #f3f4f6;
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        /* 模拟 DOM 内容 (模拟 image_3.png) */
+        .dom-node {
+            fill: #e5e7eb;
+        }
+
+        .product-image {
+            fill: rgba(229, 231, 235, 0.4);
+            stroke: #d1d5db;
+            stroke-width: 1;
+        }
+
+        /* 灰色背景模拟图片容器 */
+
+        /* 锁定后的列表项（模拟 Image 2 状态，应用深蓝色描边） */
+        .locked-list-item {
+            fill: rgba(59, 130, 246, 0.03);
+            stroke: #3b82f6;
+            stroke-width: 1.5;
+            opacity: 0;
+            /* 初始隐藏 */
+            cursor: crosshair;
+        }
+
+        /* 模拟侧边栏（初始 - Image 0） */
+        .sidebar-nodes {
+            opacity: 1;
+        }
+
+        .node-circle {
+            fill: #dbeafe;
+            stroke: #3b82f6;
+            stroke-width: 1;
+        }
+
+        .node-text {
+            fill: #1e40af;
+            font-size: 10px;
+            font-family: sans-serif;
+            text-anchor: middle;
+        }
+
+        /* 模拟侧边栏（最终 - Image 2） */
+        .sidebar-fields {
+            opacity: 0;
+        }
+
+        /* 初始隐藏 */
+        .field-item {
+            fill: #fff;
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        .field-icon {
+            fill: #3b82f6;
+        }
+
+        .field-text {
+            fill: #374151;
+            font-size: 10px;
+            font-family: sans-serif;
+        }
+
+        /* 模拟弹出框 (Image 1 - 移动到右侧) — 仅组级动画，不设置 fill/stroke，避免继承到子元素 */
+        .popup-dialog-right {
+            opacity: 0;
+            /* 初始隐藏 */
+            transform-origin: top right;
+        }
+
+        .popup-dialog-window {
+            fill: #fff;
+            stroke: #d1d5db;
+            stroke-width: 1;
+        }
+
+        /* 动画定义 */
+        @keyframes nodeFadeOut {
+
+            0%,
+            20% {
+                opacity: 1;
+            }
+
+            30%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes popupSequenceRight {
+
+            0%,
+            30% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            35%,
+            65% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            70%,
+            100% {
+                opacity: 0;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes itemLockIn {
+
+            0%,
+            65% {
+                opacity: 0;
+            }
+
+            70%,
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fieldsFadeIn {
+
+            0%,
+            75% {
+                opacity: 0;
+            }
+
+            80%,
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* 具体元素的动画应用 (5s 循环) */
+        .sidebar-nodes {
+            animation: nodeFadeOut 5s infinite;
+        }
+
+        .popup-dialog-right {
+            animation: popupSequenceRight 5s infinite;
+        }
+
+        .locked-list-item {
+            animation: itemLockIn 5s infinite;
+        }
+
+        .sidebar-fields {
+            animation: fieldsFadeIn 5s infinite;
+        }
+
+        /* AI 扫描线动画 */
+        @keyframes aiScan {
+            0% {
+                x: -150px;
+            }
+
+            20% {
+                x: 430px;
+            }
+
+            100% {
+                x: 430px;
+            }
+        }
+
+        .ai-scan-bar {
+            fill: url(#aiScanGradient);
+            animation: aiScan 5s infinite;
+            animation-delay: 0.5s;
+        }
+    </style>
+
+    <rect x="0" y="0" width="600" height="400" class="bg-main" rx="8" />
+    <rect x="420" y="10" width="170" height="380" class="bg-sidebar" rx="8" />
+    <path d="M 428 10 L 582 10 A 8 8 0 0 1 590 18 L 590 50 L 420 50 L 420 18 A 8 8 0 0 1 428 10 Z" class="bg-sidebar" style="stroke-opacity: 0.5; fill: #e5e7eb;" />
+
+    <g transform="translate(20, 50)">
+        <text x="0" y="20" style="font-size: 14px; font-weight: bold; fill: #1f2937; font-family: sans-serif;">Product
+            Listing</text>
+        <rect x="0" y="30" width="150" height="6" rx="2" class="dom-node" />
+
+        <g transform="translate(0, 50)">
+            <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(100, 0)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(200, 0)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(300, 0)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+
+            <g transform="translate(0, 130)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(100, 130)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(200, 130)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+            <g transform="translate(300, 130)">
+                <rect x="0" y="0" width="80" height="70" rx="4" class="product-image" />
+                <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+                <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+                <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+                <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item" />
+            </g>
+        </g>
+
+        <rect class="ai-scan-bar" x="-150" y="40" width="150" height="250" />
+    </g>
+
+    <g class="sidebar-nodes" transform="translate(430, 80)">
+        <circle cx="30" cy="30" r="15" class="node-circle" />
+        <text x="30" y="34" class="node-text">node_1</text>
+        <line x1="45" y1="30" x2="85" y2="30" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3" />
+        <circle cx="100" cy="30" r="15" class="node-circle" />
+        <text x="100" y="34" class="node-text">node_2</text>
+        <rect x="10" y="100" width="130" height="30" rx="4" style="fill: rgba(229, 231, 235, 0.4); stroke: #d1d5db;" />
+        <text x="75" y="118" class="node-text" style="fill: #6b7280; font-size: 8px;">Waiting for AI...</text>
+    </g>
+
+    <g class="popup-dialog-right" transform="translate(420, 60)">
+        <rect x="190" y="100" width="160" height="180" rx="10" class="popup-dialog-window" />
+        <text x="200" y="120" class="node-text" style="text-anchor: start; font-weight: bold; font-size: 10px;">识别出 1
+            个列表模式</text>
+
+        <text x="205" y="145" class="node-text" style="text-anchor: start; font-size: 8px; fill: #374151;">字段名示例:</text>
+        <text x="205" y="160" class="node-text" style="text-anchor: start; font-size: 9px; fill: #1f2937;">Price</text>
+        <text x="205" y="170" class="node-text" style="text-anchor: start; font-size: 9px; fill: #6b7280;">$225.00</text>
+
+        <text x="205" y="190" class="node-text" style="text-anchor: start; font-size: 9px; fill: #1f2937;">Title</text>
+        <text x="205" y="200" class="node-text" style="text-anchor: start; font-size: 9px; fill: #6b7280;">Alpine
+            Trek</text>
+
+        <text x="205" y="220" class="node-text"
+            style="text-anchor: start; font-size: 9px; fill: #1f2937;">Color_options</text>
+        <text x="205" y="230" class="node-text"
+            style="text-anchor: start; font-size: 9px; fill: #3b82f6; font-style: italic;">Olive/Br...</text>
+
+        <rect x="290" y="250" width="40" height="18" rx="4" style="fill: #3b82f6;" />
+        <text x="310" y="263" class="node-text" style="fill: white;">确认</text>
+    </g>
+
+    <g class="sidebar-fields" transform="translate(430, 80)">
+        <text x="0" y="15" class="field-text" style="font-weight: bold; fill: #1f2937;">列表元素</text>
+        <rect x="0" y="25" width="150" height="20" rx="4" style="fill: rgba(59, 130, 246, 0.1); stroke: #3b82f6;" />
+
+        <text x="0" y="65" class="field-text" style="font-weight: bold; fill: #1f2937;">字段</text>
+        <g transform="translate(0, 75)">
+            <rect x="0" y="0" width="150" height="20" rx="2" class="field-item" />
+            <circle cx="10" cy="10" r="6" class="field-icon" style="fill-opacity: 0.8;" />
+            <text x="25" y="14" class="field-text">Price</text>
+        </g>
+        <g transform="translate(0, 100)">
+            <rect x="0" y="0" width="150" height="20" rx="2" class="field-item" />
+            <circle cx="10" cy="10" r="6" class="field-icon" style="fill-opacity: 0.8;" />
+            <text x="25" y="14" class="field-text">Title</text>
+        </g>
+        <g transform="translate(0, 125)">
+            <rect x="0" y="0" width="150" height="20" rx="2" class="field-item" />
+            <circle cx="10" cy="10" r="6" class="field-icon" style="fill-opacity: 0.8;" />
+            <text x="25" y="14" class="field-text">Color_options</text>
+        </g>
+    </g>
+
+</svg>

@@ -117,8 +117,13 @@ async fn wechat_pay_callback(
         Ok(model) => model,
     };
 
-    let pay_order::Model { user_id, level, .. } = model;
-    match us.confirm_user(user_id, level).await {
+    let pay_order::Model {
+        user_id,
+        level,
+        edition,
+        ..
+    } = model;
+    match us.confirm_user(user_id, level, edition).await {
         Err(e) => {
             tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
         }
@@ -150,8 +155,13 @@ async fn alipay_callback(
         Ok(model) => model,
     };
 
-    let pay_order::Model { user_id, level, .. } = model;
-    match us.confirm_user(user_id, level).await {
+    let pay_order::Model {
+        user_id,
+        level,
+        edition,
+        ..
+    } = model;
+    match us.confirm_user(user_id, level, edition).await {
         Err(e) => {
             tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
         }
@@ -193,8 +203,13 @@ async fn paddle_callback(
     };
 
     if model.status == OrderStatus::Paid {
-        let pay_order::Model { user_id, level, .. } = model;
-        match us.confirm_user(user_id, level).await {
+        let pay_order::Model {
+            user_id,
+            level,
+            edition,
+            ..
+        } = model;
+        match us.confirm_user(user_id, level, edition).await {
             Err(e) => {
                 tracing::error!("confirm_user({user_id},{level:?}) failed>>>{e:?}");
             }

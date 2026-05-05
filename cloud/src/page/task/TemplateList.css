@@ -1,0 +1,8 @@
+#template-list-scrollable {
+  flex: 1;
+  overflow: hidden auto;
+  margin-right: -16px;
+}
+#template-list-scrollable .infinite-scroll-component {
+  overflow: hidden !important;
+}

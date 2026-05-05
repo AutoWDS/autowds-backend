@@ -1,0 +1,457 @@
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="flyLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="1" />
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="0" dy="2" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <style>
+    /* 基础样式 */
+    .bg-main {
+      fill: #fff;
+    }
+
+    .bg-sidebar {
+      fill: #f3f4f6;
+      stroke: #e5e7eb;
+      stroke-width: 1;
+    }
+
+    /* 模拟 DOM 内容 (模拟 image_8.png) */
+    .dom-node {
+      fill: #e5e7eb;
+    }
+
+    .product-image-placeholder {
+      fill: rgba(229, 231, 235, 0.4);
+      stroke: #d1d5db;
+      stroke-width: 1;
+    }
+
+    /* 灰色背景模拟图片容器 */
+
+    /* 锁定后的列表项（模拟 Image 2 状态，绿色描边） */
+    .locked-list-item {
+      fill: rgba(34, 197, 94, 0.1);
+      stroke: rgba(34, 197, 94, 0.5);
+      stroke-width: 1.5;
+      opacity: 0;
+      /* 初始隐藏 */
+      cursor: crosshair;
+    }
+
+    /* 第一次点击的参考点（绿色虚线） */
+    .ref-point {
+      fill: rgba(34, 197, 94, 0.1);
+      stroke: #22c55e;
+      stroke-width: 2;
+      stroke-dasharray: 4;
+      opacity: 0;
+    }
+
+    /* 悬停时的绿色描边 (Image 5) */
+    .hov-overlay {
+      fill: rgba(34, 197, 94, 0.1);
+      stroke: #22c55e;
+      stroke-width: 2;
+      stroke-dasharray: 4;
+      opacity: 0;
+    }
+
+    /* 模拟侧边栏（初始 - Image 0） */
+    .sidebar-step-0 {
+      opacity: 1;
+    }
+
+    /* 模拟侧边栏（步骤 1 - 点击第一个后） */
+    .sidebar-step-1 {
+      opacity: 0;
+    }
+
+    /* 模拟侧边栏（最终 - Image 2） */
+    .sidebar-fields {
+      opacity: 0;
+    }
+
+    /* 初始隐藏 */
+    .field-item {
+      fill: #fff;
+      stroke: #e5e7eb;
+      stroke-width: 1;
+    }
+
+    .field-icon {
+      fill: #3b82f6;
+    }
+
+    .field-text {
+      fill: #374151;
+      font-size: 10px;
+      font-family: sans-serif;
+    }
+
+    /* 文字样式 */
+    .text-base {
+      font-family: sans-serif;
+    }
+
+    .text-title {
+      font-size: 11px;
+      font-weight: bold;
+      fill: #1f2937;
+    }
+
+    .text-label {
+      font-size: 9px;
+      fill: #6b7280;
+    }
+
+    /* 动画定义 (6s 循环) */
+    @keyframes mousePointAndClick {
+      0% {
+        transform: translate(50px, 300px);
+      }
+
+      15% {
+        transform: translate(75px, 125px);
+      }
+
+      /* 移向卡片 1 */
+      18% {
+        transform: translate(75px, 125px) scale(0.9);
+      }
+
+      /* 点击动作 */
+      22% {
+        transform: translate(75px, 125px) scale(1);
+      }
+
+      40% {
+        transform: translate(175px, 125px);
+      }
+
+      /* 移向卡片 2 */
+      43% {
+        transform: translate(175px, 125px) scale(0.9);
+      }
+
+      /* 点击动作 */
+      47% {
+        transform: translate(175px, 125px) scale(1);
+      }
+
+      100% {
+        transform: translate(175px, 125px);
+      }
+    }
+
+    .mouse-cursor {
+      animation: mousePointAndClick 6s infinite;
+    }
+
+    /* 具体元素的动画序列建议 */
+    @keyframes hovGreen1 {
+
+      0%,
+      12% {
+        opacity: 0;
+      }
+
+      15%,
+      20% {
+        opacity: 1;
+      }
+
+      22%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes refLock1 {
+
+      0%,
+      18% {
+        opacity: 0;
+      }
+
+      22%,
+      55% {
+        opacity: 1;
+      }
+
+      60%,
+      100% {
+        opacity: 1;
+        stroke-width: 1.5;
+      }
+    }
+
+    @keyframes sidebarStep1 {
+
+      0%,
+      20% {
+        opacity: 0;
+      }
+
+      22%,
+      55% {
+        opacity: 1;
+      }
+
+      60%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes hovGreen2 {
+
+      0%,
+      37% {
+        opacity: 0;
+      }
+
+      40%,
+      45% {
+        opacity: 1;
+      }
+
+      47%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes refLock2 {
+
+      0%,
+      43% {
+        opacity: 0;
+      }
+
+      47%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fullLockIn {
+
+      0%,
+      55% {
+        opacity: 0;
+      }
+
+      60%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fieldsFadeIn {
+
+      0%,
+      65% {
+        opacity: 0;
+      }
+
+      70%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes sidebarStep0 {
+
+      0%,
+      18% {
+        opacity: 1;
+      }
+
+      22%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    /* 飞线动画 (模拟 XPath 飞向侧边栏) */
+    @keyframes flyPath {
+
+      0%,
+      42% {
+        stroke-dashoffset: 300;
+        opacity: 0;
+      }
+
+      45% {
+        opacity: 1;
+      }
+
+      60%,
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+      }
+    }
+
+    .fly-xpath {
+      stroke: url(#flyLineGradient);
+      stroke-width: 2;
+      fill: none;
+      stroke-dasharray: 300;
+      animation: flyPath 6s infinite;
+    }
+
+    /* 应用动画到卡片 1 和 2 */
+    .hov-overlay-1 {
+      animation: hovGreen1 6s infinite;
+    }
+
+    .ref-point-1 {
+      animation: refLock1 6s infinite;
+    }
+
+    .hov-overlay-2 {
+      animation: hovGreen2 6s infinite;
+    }
+
+    .ref-point-2 {
+      animation: refLock2 6s infinite;
+    }
+
+    /* 应用动画到其余卡片 */
+    .locked-list-item-others {
+      animation: fullLockIn 6s infinite;
+    }
+
+    /* 应用动画到侧边栏步骤 */
+    .sidebar-step-0 {
+      animation: sidebarStep0 6s infinite;
+    }
+
+    .sidebar-step-1 {
+      animation: sidebarStep1 6s infinite;
+    }
+
+    .sidebar-fields {
+      animation: fieldsFadeIn 6s infinite;
+    }
+  </style>
+
+  <rect x="0" y="0" width="600" height="400" class="bg-main" rx="8" />
+  <rect x="420" y="10" width="170" height="380" class="bg-sidebar" rx="8" />
+  <path d="M 428 10 L 582 10 A 8 8 0 0 1 590 18 L 590 50 L 420 50 L 420 18 A 8 8 0 0 1 428 10 Z" class="bg-sidebar"
+    style="stroke-opacity: 0.5; fill: #e5e7eb;" />
+  <g transform="translate(20, 50)">
+    <text x="0" y="20" class="text-base text-title" style="font-size: 14px;">Product Listing</text>
+    <rect x="0" y="30" width="150" height="6" rx="2" class="dom-node" />
+
+    <g transform="translate(0, 50)" id="productGrid">
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="hov-overlay hov-overlay-1" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="ref-point ref-point-1" />
+      </g>
+      <g transform="translate(100, 0)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="hov-overlay hov-overlay-2" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="ref-point ref-point-2" />
+      </g>
+      <g transform="translate(200, 0)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+      <g transform="translate(300, 0)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+
+      <g transform="translate(0, 130)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+      <g transform="translate(100, 130)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+      <g transform="translate(200, 130)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+      <g transform="translate(300, 130)">
+        <rect x="0" y="0" width="80" height="70" rx="4" class="product-image-placeholder" />
+        <rect x="-2" y="-2" width="84" height="106" rx="6" class="locked-list-item locked-list-item-others" />
+        <rect x="0" y="75" width="80" height="6" rx="2" class="dom-node" />
+        <rect x="0" y="85" width="40" height="6" rx="2" class="dom-node" style="opacity: 0.5;" />
+        <rect x="0" y="95" width="30" height="6" rx="2" class="dom-node" style="fill: #fbbf24;" />
+      </g>
+    </g>
+  </g>
+
+  <g class="sidebar-step-0" transform="translate(430, 80)">
+    <text x="0" y="10" class="text-base text-title">可视化点选模式</text>
+    <rect x="0" y="20" width="150" height="25" rx="4" style="fill: rgba(229, 231, 235, 0.4); stroke: #d1d5db;" />
+    <text x="75" y="37" class="text-label" style="text-anchor: middle;">点击列表容器中的第1个卡片</text>
+  </g>
+
+  <g class="sidebar-step-1" transform="translate(430, 80)">
+    <text x="0" y="10" class="text-base text-title" style="fill: #3b82f6;">已锁定第1个参考点</text>
+    <rect x="0" y="20" width="150" height="30" rx="4" style="fill:rgba(59, 130, 246, 0.1); stroke: #3b82f6;" />
+    <text x="75" y="37" class="text-label" style="fill:#1e40af; text-anchor: middle;">点击第2个卡片以确认规律</text>
+  </g>
+
+  <g class="sidebar-fields" transform="translate(430, 80)">
+    <text x="0" y="10" class="text-base text-title" style="fill: #10b981;">识别成功</text>
+    <rect x="0" y="20" width="150" height="20" rx="4" style="fill:rgba(16, 185, 129, 0.1); stroke: #10b981;" />
+    <text x="10" y="35" class="text-label" style="fill:#1e40af; font-family:monospace;">//*[@id="p-grid"]/div</text>
+    <text x="0" y="60" class="text-base text-title">字段规则已生成</text>
+    <g transform="translate(0, 70)">
+      <rect x="0" y="0" width="150" height="20" rx="2" class="field-item" />
+      <circle cx="10" cy="10" r="6" style="fill: #3b82f6;" />
+      <text x="25" y="13" class="text-label" style="fill: #1f2937;">column_1 (Price)</text>
+    </g>
+    <g transform="translate(0, 95)">
+      <rect x="0" y="0" width="150" height="20" rx="2" class="field-item" />
+      <circle cx="10" cy="10" r="6" style="fill: #3b82f6;" />
+      <text x="25" y="13" class="text-label" style="fill: #1f2937;">column_2 (Title)</text>
+    </g>
+  </g>
+  <path d="M 150 140 Q 300 180 445 100" class="fly-xpath" />
+  <g class="mouse-cursor" transform="translate(60, 150)">
+    <path d="M0,0 L12,12 L7,12 L10,18 L8,19 L5,13 L0,17 Z" fill="#1e293b" stroke="#fff" stroke-width="1" />
+  </g>
+</svg>

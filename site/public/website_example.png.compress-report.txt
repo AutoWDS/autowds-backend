@@ -1,0 +1,7 @@
+file: /Users/holmofy/rust/autowds/autowds-backend/site/public/website_example.png
+before_bytes: 1071165
+after_bytes: 1023970
+saved_bytes: 47195
+saved_percent: 4.41%
+replaced: True
+method: Pillow optimize=True compress_level=9

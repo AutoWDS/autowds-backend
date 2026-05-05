@@ -1,0 +1,163 @@
+{
+  "common": {
+    "installNow": "立即安装",
+    "wechatAssistant": "咨询客服",
+    "wechatAssistantLoading": "正在唤起客服...",
+    "wechatAssistantError": "客服加载失败，请稍后再试"
+  },
+  "nav": {
+    "features": "功能特性",
+    "useCases": "使用场景",
+    "pricing": "价格",
+    "tutorial": "教程",
+    "changelog": "更新日志",
+    "cloudService": "云服务"
+  },
+  "hero": {
+    "title": "让网页数据采集",
+    "titleHighlight": "变得简单高效",
+    "description": "AutoWDS 是一款功能强大的浏览器扩展插件，无需编程即可完成网页数据抓取、自动化操作与流程录制，让复杂采集任务变得简单高效",
+    "downloadFree": "免费下载插件",
+    "watchDemo": "观看演示视频"
+  },
+  "features": {
+    "title": "强大的功能特性",
+    "subtitle": "一切为了让数据采集更简单",
+    "moreSectionTitle": "更多功能",
+    "showcaseInstallCta": "免费开始使用",
+    "visualSelection": {
+      "title": "可视化点选",
+      "description": "无需编写代码，只需点击列表中的任意两个元素，即可智能识别并总结列表规则，所见即所得"
+    },
+    "aiRecognition": {
+      "title": "AI 识别",
+      "description": "无需手动点击，AI 算法可智能理解网页结构与列表区域，自动推荐字段和采集规则，大幅降低配置门槛与使用难度"
+    },
+    "autoPagination": {
+      "title": "自动翻页",
+      "description": "自动识别分页按钮、下一页链接或加载更多操作，批量遍历全部页面，一键采集更完整的数据内容"
+    },
+    "multipleFormats": {
+      "title": "多种导出格式",
+      "description": "支持导出为 Excel、CSV、JSON 等多种格式，便于后续分析、共享协作与接入其他业务系统"
+    },
+    "recordActions": {
+      "title": "操作录制",
+      "description": "支持录制浏览器中的点击、输入与跳转流程，自动生成可重复执行的自动化脚本，提升重复任务处理效率"
+    },
+    "deepCollection": {
+      "title": "深入采集",
+      "description": "支持从列表页进入详情页，并继续沿链接进行多级下钻，结构化抓取各层子页面中的字段数据"
+    },
+    "loginSupport": {
+      "title": "登录支持",
+      "description": "支持采集需要登录的网站内容，可自动处理 Cookie 与 Session，轻松应对账号态下的数据抓取场景"
+    },
+    "dynamicPages": {
+      "title": "动态网页",
+      "description": "良好支持 Ajax、React、Vue 等动态加载的现代网页，能够稳定获取异步渲染后的页面数据"
+    },
+    "scheduledTasks": {
+      "title": "定时任务",
+      "description": "支持设置定时采集任务，自动监控网页内容变化，帮助你持续、及时地获取最新数据"
+    },
+    "cloudSync": {
+      "title": "云端同步",
+      "description": "采集规则支持云端保存与多设备同步，无论在办公室还是外出场景都能随时继续使用"
+    }
+  },
+  "useCases": {
+    "title": "适用场景",
+    "subtitle": "无论你是什么行业，都能找到适合的应用场景",
+    "ecommerce": {
+      "title": "电商数据监控",
+      "description": "持续监控竞品价格、销量、评价等核心信息，及时发现市场变化并快速调整运营策略",
+      "examples": ["商品价格监控", "库存追踪", "评论分析", "销量统计"]
+    },
+    "market": {
+      "title": "市场调研分析",
+      "description": "快速收集行业数据与竞品信息，分析市场趋势和用户反馈，为业务决策提供可靠的数据支持",
+      "examples": ["行业报告采集", "竞品分析", "用户评价收集", "趋势分析"]
+    },
+    "content": {
+      "title": "内容聚合",
+      "description": "从多个网站高效采集新闻、文章与资讯内容，帮助你快速搭建个性化的信息聚合与内容分发平台",
+      "examples": ["新闻聚合", "文章采集", "图片下载", "RSS 生成"]
+    },
+    "research": {
+      "title": "学术研究",
+      "description": "批量采集论文、专利、文献等学术资料，辅助科研选题、资料整理与后续分析工作",
+      "examples": ["论文数据采集", "引用分析", "专利检索", "数据整理"]
+    },
+    "recruitment": {
+      "title": "招聘信息",
+      "description": "聚合各大招聘网站的职位信息、薪资范围与企业数据，帮助你更高效地筛选机会并找到心仪工作",
+      "examples": ["职位采集", "薪资分析", "公司信息", "行业趋势"]
+    },
+    "realestate": {
+      "title": "房产信息",
+      "description": "批量采集房源信息并分析房价走势、区域变化与历史数据，辅助租房、购房和投资决策",
+      "examples": ["房源采集", "价格监控", "区域分析", "历史数据"]
+    }
+  },
+  "pricing": {
+    "title": "选择适合你的方案",
+    "subtitle": "本地插件 + 云端服务，灵活满足不同需求",
+    "localPlugin": "本地浏览器插件",
+    "localPluginDesc": "在浏览器中直接运行，简单易用",
+    "billingToggle": {
+      "monthly": "按月付费",
+      "yearly": "按年付费",
+      "yearlyDiscount": "8折优惠"
+    },
+    "free": {
+      "name": "免费版",
+      "price": "¥0",
+      "period": "永久免费",
+      "features": ["基础数据采集", "每日 100 条数据", "5 个采集任务", "社区支持", "基础导出格式"],
+      "cta": "开始使用"
+    },
+    "personal": {
+      "name": "个人版",
+      "price": "¥29",
+      "yearlyPrice": "¥25",
+      "period": "每月",
+      "yearlyPeriod": "每月（年付）",
+      "features": ["无限数据采集", "每日 1000 条数据", "100 个采集任务", "邮件支持", "标准导出格式"],
+      "cta": "立即购买"
+    },
+    "professional": {
+      "name": "专业版",
+      "price": "¥99",
+      "yearlyPrice": "¥80",
+      "period": "每月",
+      "yearlyPeriod": "每月（年付）",
+      "features": ["无限数据采集", "无限采集任务", "云端存储", "定时任务", "优先技术支持", "高级导出选项", "API 接口"],
+      "cta": "立即购买",
+      "popular": "最受欢迎"
+    },
+    "enterprise": {
+      "name": "企业版",
+      "price": "定制",
+      "period": "联系我们",
+      "features": ["专业版所有功能", "私有化部署", "团队协作", "专属客户经理", "定制开发", "SLA 保障"],
+      "cta": "联系销售"
+    }
+  },
+  "cta": {
+    "title": "准备好开始了吗？",
+    "description": "加入数万用户，立即开始体验更简单、高效、可复制的网页数据采集方式",
+    "button": "免费下载 AutoWDS"
+  },
+  "footer": {
+    "description": "让网页数据采集与自动化操作变得更简单、更高效",
+    "product": "产品",
+    "resources": "资源",
+    "contact": "联系我们",
+    "copyright": "© 2024 AutoWDS. All rights reserved."
+  },
+  "changelog": {
+    "title": "更新日志",
+    "subtitle": "了解 AutoWDS 的最新功能和改进"
+  }
+}

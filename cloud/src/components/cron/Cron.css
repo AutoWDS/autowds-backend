@@ -1,0 +1,35 @@
+.cron-modal .ant-modal-content {
+  padding: 0 !important;
+}
+.cron-modal .ant-modal-content .ant-modal-confirm-body {
+  display: block;
+}
+.cron-modal
+  .ant-modal-content
+  .ant-modal-confirm-body
+  .ant-modal-confirm-content {
+  margin-block-start: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.cron-modal .cron-buttons {
+  width: calc(100% - 22px);
+  border-top: 1px solid #e8e8e8;
+  padding: 10px;
+  text-align: right;
+  justify-content: end;
+}
+
+.cron-panel {
+  width: 600px;
+}
+.cron-panel .ant-tabs .ant-tabs-tab-btn {
+  width: 50px;
+  text-align: center;
+}
+.cron-panel .ant-tabs .ant-tabs-nav {
+  margin-bottom: 8px;
+}
+.cron-panel .ant-tabs .ant-tabs-tabpane {
+  padding: 0 8px 8px;
+}

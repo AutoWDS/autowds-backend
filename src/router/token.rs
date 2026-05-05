@@ -1,5 +1,6 @@
 use crate::{
     model::{account_user, prelude::AccountUser},
+    service::user::UserService,
     utils::jwt::{self, Claims},
     views::{token::UserToken, user::AuthenticationToken},
 };
@@ -19,6 +20,7 @@ use summer_web::{
 #[post_api("/token")]
 async fn login(
     Component(db): Component<DbConn>,
+    Component(us): Component<UserService>,
     Valid(Json(body)): Valid<Json<AuthenticationToken>>,
 ) -> Result<Json<UserToken>> {
     let user = AccountUser::find()
@@ -31,6 +33,11 @@ async fn login(
     if user.passwd != body.passwd {
         Err(KnownWebError::unauthorized("密码错误"))?;
     }
+
+    let user = us
+        .refresh_user_membership(user)
+        .await
+        .context("refresh membership failed")?;
 
     let claims = Claims::new(user.clone());
     let token = jwt::encode(claims)?;

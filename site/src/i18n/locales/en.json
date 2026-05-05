@@ -1,0 +1,163 @@
+{
+  "common": {
+    "installNow": "Install Now",
+    "wechatAssistant": "Support Assistant",
+    "wechatAssistantLoading": "Opening support...",
+    "wechatAssistantError": "Failed to open support, please try again"
+  },
+  "nav": {
+    "features": "Features",
+    "useCases": "Use Cases",
+    "pricing": "Pricing",
+    "tutorial": "Tutorial",
+    "changelog": "Changelog",
+    "cloudService": "Cloud Service"
+  },
+  "hero": {
+    "title": "Make Web Data Collection",
+    "titleHighlight": "Simple and Efficient",
+    "description": "AutoWDS is a powerful browser extension that lets you handle web scraping, automation, and workflow recording without coding, making complex data collection tasks much simpler and more efficient",
+    "downloadFree": "Download Free",
+    "watchDemo": "Watch Demo"
+  },
+  "features": {
+    "title": "Powerful Features",
+    "subtitle": "Everything to make data collection easier",
+    "moreSectionTitle": "More features",
+    "showcaseInstallCta": "Start for free",
+    "visualSelection": {
+      "title": "Visual Selection",
+      "description": "No coding required. Simply click any two elements in a list, and the tool can intelligently identify and summarize the list extraction rules with a true WYSIWYG experience"
+    },
+    "aiRecognition": {
+      "title": "AI Recognition",
+      "description": "No manual clicking required. AI algorithms intelligently understand page structure and list regions, then automatically recommend fields and extraction rules, greatly lowering the setup barrier and learning curve"
+    },
+    "autoPagination": {
+      "title": "Auto Pagination",
+      "description": "Automatically identifies pagination buttons, next-page links, or load-more actions, then traverses all pages in batches to collect more complete datasets with one click"
+    },
+    "multipleFormats": {
+      "title": "Multiple Export Formats",
+      "description": "Export data to Excel, CSV, JSON, and other formats, making it easier to analyze, share, collaborate on, or connect with downstream business systems"
+    },
+    "recordActions": {
+      "title": "Action Recording",
+      "description": "Record clicks, inputs, and navigation steps in the browser, then automatically generate reusable automation scripts to improve the efficiency of repetitive tasks"
+    },
+    "deepCollection": {
+      "title": "Deep crawling",
+      "description": "Start from list pages, enter detail pages, and continue drilling down through linked pages to extract structured field data from each level of the site"
+    },
+    "loginSupport": {
+      "title": "Login Support",
+      "description": "Supports scraping content from websites that require login, with automatic handling of cookies and sessions for account-based collection scenarios"
+    },
+    "dynamicPages": {
+      "title": "Dynamic Pages",
+      "description": "Works well with modern websites built with Ajax, React, Vue, and other dynamic-loading frameworks, helping you reliably capture data after asynchronous rendering"
+    },
+    "scheduledTasks": {
+      "title": "Scheduled Tasks",
+      "description": "Create scheduled collection tasks to automatically monitor page changes and continuously capture the latest data in a timely manner"
+    },
+    "cloudSync": {
+      "title": "Cloud Sync",
+      "description": "Save extraction rules to the cloud and sync them across devices, so you can continue working anytime whether you are in the office or on the go"
+    }
+  },
+  "useCases": {
+    "title": "Use Cases",
+    "subtitle": "Find the perfect application for your industry",
+    "ecommerce": {
+      "title": "E-commerce Monitoring",
+      "description": "Continuously monitor competitor prices, sales, reviews, and other key metrics so you can spot market changes early and adjust your operations strategy faster",
+      "examples": ["Price Monitoring", "Inventory Tracking", "Review Analysis", "Sales Statistics"]
+    },
+    "market": {
+      "title": "Market Research",
+      "description": "Quickly gather industry data and competitor insights, analyze market trends and customer feedback, and support business decisions with reliable data",
+      "examples": ["Industry Reports", "Competitor Analysis", "User Reviews", "Trend Analysis"]
+    },
+    "content": {
+      "title": "Content Aggregation",
+      "description": "Efficiently collect news, articles, and information from multiple websites to build personalized aggregation and content distribution platforms faster",
+      "examples": ["News Aggregation", "Article Collection", "Image Download", "RSS Generation"]
+    },
+    "research": {
+      "title": "Academic Research",
+      "description": "Batch collect papers, patents, literature, and other academic resources to support topic selection, research organization, and follow-up analysis",
+      "examples": ["Paper Collection", "Citation Analysis", "Patent Search", "Data Organization"]
+    },
+    "recruitment": {
+      "title": "Job Information",
+      "description": "Aggregate job listings, salary ranges, and company information from major recruitment websites to help you screen opportunities more efficiently and find the right role faster",
+      "examples": ["Job Collection", "Salary Analysis", "Company Info", "Industry Trends"]
+    },
+    "realestate": {
+      "title": "Real Estate",
+      "description": "Batch collect property listings and analyze price trends, regional changes, and historical data to support rental, home-buying, and investment decisions",
+      "examples": ["Property Collection", "Price Monitoring", "Area Analysis", "Historical Data"]
+    }
+  },
+  "pricing": {
+    "title": "Choose Your Plan",
+    "subtitle": "Local extension + Cloud service, flexible to meet different needs",
+    "localPlugin": "Local Browser Extension",
+    "localPluginDesc": "Run directly in your browser, simple and easy to use",
+    "billingToggle": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "20% off"
+    },
+    "free": {
+      "name": "Free",
+      "price": "$0",
+      "period": "Forever",
+      "features": ["Basic data collection", "100 records/day", "5 scraping tasks", "Community support", "Basic export formats"],
+      "cta": "Get Started"
+    },
+    "personal": {
+      "name": "Personal",
+      "price": "$9",
+      "yearlyPrice": "$7",
+      "period": "per month",
+      "yearlyPeriod": "per month (billed yearly)",
+      "features": ["Unlimited data collection", "1,000 records/day", "100 scraping tasks", "Email support", "Standard export formats"],
+      "cta": "Buy Now"
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "$15",
+      "yearlyPrice": "$12",
+      "period": "per month",
+      "yearlyPeriod": "per month (billed yearly)",
+      "features": ["Unlimited data collection", "Unlimited tasks", "Cloud storage", "Scheduled tasks", "Priority support", "Advanced export options", "API access"],
+      "cta": "Buy Now",
+      "popular": "Most Popular"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Custom",
+      "period": "Contact Us",
+      "features": ["All Pro features", "Private deployment", "Team collaboration", "Dedicated account manager", "Custom development", "SLA guarantee"],
+      "cta": "Contact Sales"
+    }
+  },
+  "cta": {
+    "title": "Ready to Get Started?",
+    "description": "Join tens of thousands of users and start experiencing a simpler, more efficient, and more repeatable way to collect web data",
+    "button": "Download AutoWDS Free"
+  },
+  "footer": {
+    "description": "Make web data collection and browser automation simpler and more efficient",
+    "product": "Product",
+    "resources": "Resources",
+    "contact": "Contact",
+    "copyright": "© 2024 AutoWDS. All rights reserved."
+  },
+  "changelog": {
+    "title": "Changelog",
+    "subtitle": "Stay updated with the latest features and improvements of AutoWDS"
+  }
+}
