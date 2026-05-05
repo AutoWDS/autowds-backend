@@ -1,6 +1,10 @@
 //! 从 S3 兼容存储读取实例归档的 NDJSON 任务日志（与 autowds-instance `S3Archiver` 的 key 规则一致）。
+//! 支持 `…jsonl.gz`（实例侧 `[s3] gzip_logs`）：GetObject 后在此解压为 UTF-8 文本再供 SSE 回放。
+
+use std::io::{Cursor, Read};
 
 use anyhow::Context as _;
+use flate2::read::GzDecoder;
 use aws_config::BehaviorVersion;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{Builder as S3ConfigBuilder, Region};
@@ -66,4 +70,22 @@ pub async fn fetch_archived_task_log_bytes(cfg: &TaskLogS3Config, log_key: &str)
         );
     }
     Ok(bytes.to_vec())
+}
+
+fn is_gzip_payload(bytes: &[u8]) -> bool {
+    bytes.len() >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b
+}
+
+/// 将 GetObject 得到的字节解码为 NDJSON 文本：`.gz` 键或 gzip 魔数则先 gunzip。
+pub fn decode_archived_task_log_ndjson(log_key: &str, bytes: &[u8]) -> anyhow::Result<String> {
+    let gzip_by_key = log_key.trim_end().ends_with(".gz");
+    if gzip_by_key || is_gzip_payload(bytes) {
+        let mut decoder = GzDecoder::new(Cursor::new(bytes));
+        let mut out = String::new();
+        decoder
+            .read_to_string(&mut out)
+            .context("gzip 解压归档任务日志失败（内容损坏或非 gzip）")?;
+        return Ok(out);
+    }
+    Ok(String::from_utf8_lossy(bytes).into_owned())
 }

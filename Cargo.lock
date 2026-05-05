@@ -714,6 +714,7 @@ dependencies = [
  "axum-valid",
  "chrono",
  "derive_more 1.0.0",
+ "flate2",
  "futures-util",
  "hex",
  "hmac 0.13.0",

@@ -1,6 +1,6 @@
 use crate::config::s3::TaskLogS3Config;
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
-use crate::s3_task_log::fetch_archived_task_log_bytes;
+use crate::s3_task_log::{decode_archived_task_log_ndjson, fetch_archived_task_log_bytes};
 use crate::task_instance_logs_sse::{open_archive_ndjson_sse, open_redis_pubsub_log_sse, redis_pubsub_channel};
 use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
@@ -501,7 +501,10 @@ async fn task_instance_logs(
                 tracing::error!(error = %e, %log_key, "S3 GetObject 任务归档日志失败");
                 KnownWebError::internal_server_error(format!("读取归档日志失败：{e}"))
             })?;
-        let body = String::from_utf8_lossy(&bytes).into_owned();
+        let body = decode_archived_task_log_ndjson(log_key, &bytes).map_err(|e| {
+            tracing::error!(error = %e, %log_key, "归档任务日志解码失败");
+            KnownWebError::internal_server_error(format!("解码归档日志失败：{e}"))
+        })?;
         return Ok(open_archive_ndjson_sse(body));
     }
 

@@ -33,6 +33,7 @@ serde_with = "3.14"
 strum = { version = "0.27", features = ["derive"] }
 schemars = { version = "1.1", features = ["derive", "chrono04"] }
 anyhow = "1.0"
+flate2 = "1"
 axum-extra = { version = "0.10", features = ["typed-header"] }
 axum-client-ip = "1.1"
 axum-valid = { version = "0.24.0", features = ["aide"] }
