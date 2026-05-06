@@ -1,16 +1,16 @@
 use crate::{
     model::{
         pay_order::{self, Entity as PayOrder},
-        sea_orm_active_enums::OrderStatus,
+        sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition},
     },
-    router::pay_query::TradeCreateQuery,
     service::{pay::PayOrderService, user::UserService},
     utils::jwt::Claims,
 };
 use axum_extra::headers::HeaderMap;
 use chrono::NaiveDate;
+use schemars::JsonSchema;
 use sea_orm::DbConn;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use summer::tracing;
 use summer_web::{
@@ -23,6 +23,14 @@ use summer_web::{
     extractor::{Component, Path, Query},
     get, post,
 };
+use validator::Validate;
+
+#[derive(Debug, Deserialize, Serialize, Validate, JsonSchema)]
+pub struct TradeCreateQuery {
+    pub level: OrderLevel,
+    pub edition: ProductEdition,
+    pub pay_from: PayFrom,
+}
 
 /// 创建支付订单（表单提交）
 #[post("/pay/create")]

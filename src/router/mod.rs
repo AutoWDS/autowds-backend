@@ -1,6 +1,5 @@
 mod admin;
 mod pay;
-mod pay_query;
 mod statistics;
 mod task;
 mod template;

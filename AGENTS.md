@@ -7,10 +7,9 @@
 这不是一个单纯的 API 服务。仓库同时包含：
 
 - **Rust 后端**：基于 Summer 框架的插件化 Web 服务
-- **Frontend (cloud)**：React + TypeScript 用户控制台
-- **Backend (admin)**：React + TypeScript 管理后台
+- **Cloud**：React + TypeScript 用户控制台
+- **Admin**：React + TypeScript 管理后台
 - **Site**：Next.js 营销站点
-- **WASM 智能抽取**：与 `autowds-browser` 共享的 Rust/WASM 核心
 
 做改动前，先确认自己修改的是哪一层：`Rust API`、`frontend`、`backend` 还是 `site`，不要混淆各层的职责和构建方式。
 
@@ -27,8 +26,8 @@
 - **API 文档**：OpenAPI + Scalar
 
 ### 前端子项目
-- **cloud (frontend/)**：React 18 + TypeScript + Ant Design，Vite 构建
-- **admin (backend/)**：React 18 + TypeScript + Ant Design，Vite 构建
+- **cloud (cloud/)**：React 18 + TypeScript + Ant Design，Vite 构建
+- **admin (admin/)**：React 18 + TypeScript + Ant Design，Vite 构建
 - **site (site/)**：Next.js + React + TypeScript
 
 ### 基础设施
@@ -66,10 +65,10 @@ just gen-model
 ### 前端开发
 ```bash
 # cloud 控制台
-cd frontend && npm install && npm start
+cd cloud && npm install && npm start
 
 # admin 管理后台
-cd backend && npm install && npm start
+cd admin && npm install && npm start
 
 # site 营销站点
 cd site && npm install && npm run dev
@@ -130,10 +129,10 @@ docker compose up -d postgres redis
 
 ### 前端子项目
 
-- `frontend/`
+- `cloud/`
   用户控制台（cloud 界面）。Vite + React + Ant Design。
 
-- `backend/`
+- `admin/`
   管理后台（admin 界面）。Vite + React + Ant Design。
 
 - `site/`
@@ -240,8 +239,8 @@ async fn handler(
 ### 8. 多前端服务
 
 生产环境由 Rust 后端统一 serving 静态资源：
-- `/cloud/` → frontend (用户控制台)
-- `/admin/` → backend (管理后台)
+- `/cloud/` → cloud (用户控制台)
+- `/admin/` → admin (管理后台)
 - `/` → site (营销站点)
 
 开发环境分别 serve，通过 `router/mod.rs` 中的 `Env::Dev` 判断。
