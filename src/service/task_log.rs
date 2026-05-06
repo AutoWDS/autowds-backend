@@ -18,7 +18,7 @@ use tokio_stream::wrappers::ReceiverStream;
 
 use crate::model::prelude::{ScraperTask, TaskInstance};
 use crate::model::task_instance;
-use crate::plugin::task_log_s3::TaskLogS3Client;
+use crate::plugin::s3::S3Client;
 
 pub type TaskLogSse = Sse<ReceiverStream<std::result::Result<Event, Infallible>>>;
 
@@ -48,7 +48,7 @@ pub struct TaskLogService {
     #[inject(config)]
     redis_config: RedisConfig,
     #[inject(component)]
-    s3_client: TaskLogS3Client,
+    s3_client: S3Client,
 }
 
 impl TaskLogService {
@@ -105,7 +105,7 @@ impl TaskLogService {
 
         let bytes = self
             .s3_client
-            .get_log_object(log_key)
+            .get_object_bytes(log_key)
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, %log_key, "S3 GetObject 任务归档日志失败");

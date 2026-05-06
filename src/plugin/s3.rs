@@ -1,10 +1,10 @@
+use anyhow::Context as _;
 use aws_config::BehaviorVersion;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::{
     config::{Builder as S3ConfigBuilder, Region},
     Client,
 };
-use anyhow::Context as _;
 use summer::{
     app::AppBuilder,
     async_trait,
@@ -14,17 +14,17 @@ use summer::{
 
 use crate::config::s3::TaskLogS3Config;
 
-pub struct TaskLogS3Plugin;
+pub struct S3Plugin;
 
 #[async_trait]
-impl Plugin for TaskLogS3Plugin {
+impl Plugin for S3Plugin {
     async fn build(&self, app: &mut AppBuilder) {
         let config = app
             .get_config::<TaskLogS3Config>()
             .expect("读取 [s3] 配置失败");
 
         let client = if config.is_configured() {
-            Some(TaskLogS3ClientInner {
+            Some(S3ClientInner {
                 client: build_s3_client(&config).await,
                 bucket: config.bucket.trim().to_string(),
                 prefix: config.prefix.trim().to_string(),
@@ -32,31 +32,31 @@ impl Plugin for TaskLogS3Plugin {
         } else {
             None
         };
-        app.add_component(TaskLogS3Client(client));
+        app.add_component(S3Client(client));
     }
 }
 
 #[derive(Clone)]
-pub struct TaskLogS3Client(Option<TaskLogS3ClientInner>);
+pub struct S3Client(Option<S3ClientInner>);
 
 #[derive(Clone)]
-struct TaskLogS3ClientInner {
+struct S3ClientInner {
     client: Client,
     bucket: String,
     prefix: String,
 }
 
-impl TaskLogS3Client {
+impl S3Client {
     pub fn is_configured(&self) -> bool {
         self.0.is_some()
     }
 
-    pub async fn get_log_object(&self, log_key: &str) -> anyhow::Result<Vec<u8>> {
+    pub async fn get_object_bytes(&self, object_key: &str) -> anyhow::Result<Vec<u8>> {
         let Some(inner) = self.0.as_ref() else {
             anyhow::bail!("服务端 [s3] 未配置完整");
         };
 
-        let key = inner.object_key_for_log(log_key);
+        let key = inner.object_key(object_key);
         let resp = inner
             .client
             .get_object()
@@ -76,14 +76,14 @@ impl TaskLogS3Client {
     }
 }
 
-impl TaskLogS3ClientInner {
-    /// `log_key` 为库中存的相对键；若配置了 `prefix`，与实例侧相同拼到对象完整 key。
-    fn object_key_for_log(&self, log_key: &str) -> String {
-        let log_key = log_key.trim().trim_start_matches('/');
+impl S3ClientInner {
+    /// `object_key` 为库中存的相对键；若配置了 `prefix`，则拼到对象完整 key。
+    fn object_key(&self, object_key: &str) -> String {
+        let object_key = object_key.trim().trim_start_matches('/');
         if self.prefix.is_empty() {
-            log_key.to_string()
+            object_key.to_string()
         } else {
-            format!("{}/{}", self.prefix.trim_end_matches('/'), log_key)
+            format!("{}/{}", self.prefix.trim_end_matches('/'), object_key)
         }
     }
 }
@@ -94,7 +94,7 @@ async fn build_s3_client(config: &TaskLogS3Config) -> Client {
         config.secret_access_key.trim(),
         None,
         None,
-        "autowds-backend-task-log",
+        "autowds-backend-s3",
     );
 
     let sdk = aws_config::defaults(BehaviorVersion::latest())
