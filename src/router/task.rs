@@ -1,10 +1,8 @@
-use crate::config::s3::TaskLogS3Config;
 use crate::model::prelude::{AccountUser, ScraperTask, TaskInstance};
-use crate::task_log::s3::{decode_archived_task_log_ndjson, fetch_archived_task_log_bytes};
-use crate::task_log::sse::{open_archive_ndjson_sse, open_redis_pubsub_log_sse, redis_pubsub_channel};
-use crate::model::task_instance;
 use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
+use crate::model::task_instance;
+use crate::service::task_log::{TaskLogService, TaskLogSse};
 use crate::utils::jwt::{Claims, OptionalClaims};
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use crate::views::task_instance_capture::TaskInstanceCaptureItem;
@@ -18,21 +16,16 @@ use sea_orm::{
 };
 use serde::Deserialize;
 use serde_json::Value;
-use std::convert::Infallible;
 use std::sync::Arc;
-use summer::config::ConfigRegistry;
 use summer_job::job::Job;
 use summer_job::JobScheduler;
-use summer_redis::config::RedisConfig;
 use summer_sea_orm::pagination::{Page, Pagination, PaginationExt};
 use summer_sqlx::sqlx;
 use summer_sqlx::ConnectPool;
-use summer_web::axum::response::sse::{Event, Sse};
 use summer_web::axum::Json;
 use summer_web::error::{KnownWebError, Result};
 use summer_web::extractor::{AppRef, Component, Path, Query};
 use summer_web::{delete_api, get, get_api, patch_api, post_api, put_api};
-use tokio_stream::wrappers::ReceiverStream;
 use crate::service::user::UserService;
 
 /// 检查用户任务数量限制
@@ -473,60 +466,18 @@ async fn update_task_schedule_info(
 
 /// # 某次任务实例的执行日志（SSE）
 ///
-/// - 若 `task_instance.log_key` 已写入且服务端 `[s3]` 配置完整：从对象存储拉取 NDJSON，按行推送后结束连接（不订阅 Redis）。
-/// - 否则：订阅 Redis `task:{taskId}:{instanceId}:logs` 实时推送（见 [`crate::task_log::sse`]）。
+/// - 若 `task_instance.log_key` 已写入且服务端 `[s3]` 配置完整：从对象存储拉取 NDJSON，按行推送后结束连接。
+/// - 否则：读取 Redis Stream `task:{taskId}:{instanceId}:logs` 实时推送。
 #[get("/task/{task_id}/instance/{instance_id}/logs")]
 async fn task_instance_logs(
     opt_claims: OptionalClaims,
     Path((task_id, instance_id)): Path<(i64, i64)>,
-    Component(db): Component<DbConn>,
-    AppRef(app): AppRef,
-) -> Result<Sse<ReceiverStream<std::result::Result<Event, Infallible>>>> {
+    Component(task_log_service): Component<TaskLogService>,
+) -> Result<TaskLogSse> {
     let claims = opt_claims.get()?;
-    ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
-
-    let inst = TaskInstance::find_by_id(instance_id)
-        .one(&db)
+    task_log_service
+        .open_instance_logs(claims.uid, task_id, instance_id)
         .await
-        .context("查询 task_instance 失败")?
-        .ok_or_else(|| KnownWebError::not_found("实例不存在"))?;
-    if inst.task_id != task_id {
-        return Err(KnownWebError::bad_request("实例与任务不匹配"))?;
-    }
-
-    if let Some(log_key) = inst
-        .log_key
-        .as_deref()
-        .map(str::trim)
-        .filter(|k| !k.is_empty())
-    {
-        let s3_cfg = app.get_config::<TaskLogS3Config>().map_err(|e| {
-            KnownWebError::internal_server_error(format!("读取 [s3] 配置失败：{e}"))
-        })?;
-        if !s3_cfg.is_configured() {
-            return Err(KnownWebError::internal_server_error(
-                "实例已写入归档键 log_key，但服务端 [s3] 未配置完整，无法从对象存储读取日志",
-            ))?;
-        }
-        let bytes = fetch_archived_task_log_bytes(&s3_cfg, log_key)
-            .await
-            .map_err(|e| {
-                tracing::error!(error = %e, %log_key, "S3 GetObject 任务归档日志失败");
-                KnownWebError::internal_server_error(format!("读取归档日志失败：{e}"))
-            })?;
-        let body = decode_archived_task_log_ndjson(log_key, &bytes).map_err(|e| {
-            tracing::error!(error = %e, %log_key, "归档任务日志解码失败");
-            KnownWebError::internal_server_error(format!("解码归档日志失败：{e}"))
-        })?;
-        return Ok(open_archive_ndjson_sse(body));
-    }
-
-    let redis_cfg = app
-        .get_config::<RedisConfig>()
-        .map_err(|e| KnownWebError::internal_server_error(format!("读取Redis配置失败: {e}")))?;
-
-    let channel = redis_pubsub_channel(task_id, instance_id);
-    Ok(open_redis_pubsub_log_sse(redis_cfg.uri.clone(), channel))
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]

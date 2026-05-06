@@ -19,10 +19,7 @@ impl UserService {
     /// 若会员已过期则自动降级为免费版（L0）。
     ///
     /// - `vip_expired_at` 为空时：不做过期判断（兼容历史“没有过期字段”的已付费用户）。
-    pub async fn refresh_user_membership_by_id(
-        &self,
-        user_id: i64,
-    ) -> Result<account_user::Model> {
+    pub async fn refresh_user_membership_by_id(&self, user_id: i64) -> Result<account_user::Model> {
         let user = AccountUser::find_by_id(user_id).one(&self.db).await?;
         let Some(user) = user else {
             anyhow::bail!("用户不存在: user_id={user_id}");
@@ -65,7 +62,12 @@ impl UserService {
         level: OrderLevel,
         edition: ProductEdition,
     ) -> Result<String> {
-        tracing::info!("确认用户 {} 的 {:?} 会员支付，edition={:?}", user_id, level, edition);
+        tracing::info!(
+            "确认用户 {} 的 {:?} 会员支付，edition={:?}",
+            user_id,
+            level,
+            edition
+        );
 
         let user = AccountUser::find_by_id(user_id).one(&self.db).await?;
         let Some(user) = user else {
@@ -73,10 +75,7 @@ impl UserService {
         };
 
         let now = Local::now().naive_local();
-        let base = user
-            .vip_expired_at
-            .filter(|t| *t > now)
-            .unwrap_or(now);
+        let base = user.vip_expired_at.filter(|t| *t > now).unwrap_or(now);
         let new_expired_at = match level {
             OrderLevel::Monthly => base + Duration::days(30),
             OrderLevel::Annual => base + Duration::days(365),

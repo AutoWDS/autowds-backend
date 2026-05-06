@@ -121,9 +121,8 @@ where
         parts: &mut Parts,
         _state: &S,
     ) -> std::result::Result<Self, Self::Rejection> {
-        let token = if let Ok(TypedHeader(Authorization(bearer))) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
+        let token = if let Ok(TypedHeader(Authorization(bearer))) =
+            parts.extract::<TypedHeader<Authorization<Bearer>>>().await
         {
             Some(bearer.token().to_string())
         } else {
@@ -132,8 +131,7 @@ where
                 .uri
                 .query()
                 .and_then(|q| {
-                    serde_urlencoded::from_str::<std::collections::HashMap<String, String>>(q)
-                        .ok()
+                    serde_urlencoded::from_str::<std::collections::HashMap<String, String>>(q).ok()
                 })
                 .and_then(|params| params.get("token").cloned())
         };

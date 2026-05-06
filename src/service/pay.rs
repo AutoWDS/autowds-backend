@@ -4,7 +4,7 @@ use crate::{
         pay_order,
         sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition},
     },
-    utils::pay_plugin::{Alipay, PaddleClient, WechatPayClient},
+    plugin::pay::{Alipay, PaddleClient, WechatPayClient},
 };
 use alipay_sdk_rust::{biz, response::TradePrecreateResponse};
 use anyhow::{anyhow, Context};

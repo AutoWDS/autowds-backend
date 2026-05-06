@@ -27,7 +27,9 @@ pub struct ScheduleData {
 }
 
 /// 落库在 `scraper_task.data` 一列：调度 + 数据质量等任务级配置（信封结构）。
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema)]
+#[derive(
+    Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, FromJsonQueryResult, JsonSchema,
+)]
 #[serde(rename_all = "camelCase")]
 pub struct ScraperTaskData {
     /// 未配置调度时可为空，仅保留 `data_quality` 等配置。

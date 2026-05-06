@@ -1,7 +1,7 @@
 mod config;
 mod model;
+mod plugin;
 mod router;
-mod task_log;
 mod service;
 mod task;
 mod utils;
@@ -15,7 +15,8 @@ use summer_redis::RedisPlugin;
 use summer_sea_orm::SeaOrmPlugin;
 use summer_sqlx::SqlxPlugin;
 use summer_web::{WebConfigurator, WebPlugin};
-use utils::pay_plugin::PayPlugin;
+use plugin::pay::PayPlugin;
+use plugin::task_log_s3::TaskLogS3Plugin;
 
 #[tokio::main]
 async fn main() {
@@ -28,6 +29,7 @@ async fn main() {
         .add_plugin(JobPlugin)
         .add_plugin(ApalisPlugin)
         .add_plugin(PayPlugin)
+        .add_plugin(TaskLogS3Plugin)
         .add_router(router::router())
         .add_worker(task::add_storage)
         .add_scheduler(task::recover_task_schedules)
