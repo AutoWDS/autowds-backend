@@ -1,8 +1,10 @@
 import {
   BranchesOutlined,
   DownloadOutlined,
+  EyeOutlined,
   PlayCircleOutlined,
   SaveOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import {
   Alert,
@@ -30,9 +32,12 @@ import {
   Controls,
   Edge,
   EdgeChange,
+  Handle,
   MiniMap,
   Node,
   NodeChange,
+  NodeProps,
+  Position,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -115,6 +120,9 @@ const nodeTitle: Record<CleanNodeType, string> = {
 interface CleanNodeData extends Record<string, unknown> {
   label: string;
   nodeType: CleanNodeType;
+  params?: JsonObject;
+  onPreview?: (nodeId: string) => void;
+  onSettings?: (nodeId: string) => void;
 }
 
 type FlowNode = Node<CleanNodeData>;
@@ -147,18 +155,11 @@ function parseJsonObject(value: string): JsonObject | null {
 function toFlowNodes(pipeline: CleanPipelineDTO): FlowNode[] {
   return pipeline.nodes.map((node, index) => ({
     id: node.id,
-    type: "default",
+    type: "cleanNode",
     position: node.position || { x: 80 + index * 220, y: 160 },
     data: {
       label: node.label || nodeTitle[node.type],
       nodeType: node.type,
-    },
-    style: {
-      borderColor:
-        node.type === "source" || node.type === "sink" ? "#1677ff" : "#52c41a",
-      borderWidth: 2,
-      borderRadius: 8,
-      minWidth: 150,
     },
   }));
 }
@@ -186,6 +187,199 @@ function uniqueEdgeId(source: string, target: string) {
 function isTransformNodeType(type: CleanNodeType): type is TransformNodeType {
   return type !== "source" && type !== "sink";
 }
+
+function openNodeSettings(
+  nodeId: string,
+  setSelectedId: (nodeId: string) => void,
+  setParamModalOpen: (open: boolean) => void,
+) {
+  setSelectedId(nodeId);
+  setParamModalOpen(true);
+}
+
+function buildPreviewPipeline(pipeline: CleanPipelineDTO, targetId: string): CleanPipelineDTO {
+  const target = pipeline.nodes.find((node) => node.id === targetId);
+  if (!target || target.type === "sink") return pipeline;
+
+  const included = new Set<string>([targetId]);
+  const stack = [targetId];
+  while (stack.length) {
+    const current = stack.pop() as string;
+    pipeline.edges
+      .filter((edge) => edge.target === current)
+      .forEach((edge) => {
+        if (!included.has(edge.source)) {
+          included.add(edge.source);
+          stack.push(edge.source);
+        }
+      });
+  }
+
+  const nodes = pipeline.nodes.filter((node) => included.has(node.id));
+  const edges = pipeline.edges.filter(
+    (edge) => included.has(edge.source) && included.has(edge.target),
+  );
+  const previewSinkId = "__preview_sink";
+  return {
+    ...pipeline,
+    nodes: nodes.concat({
+      id: previewSinkId,
+      type: "sink",
+      label: "Preview",
+      position: {
+        x: (target.position?.x || 0) + 260,
+        y: target.position?.y || 0,
+      },
+      params: {},
+    }),
+    edges: edges.concat({
+      id: `edge-${targetId}-${previewSinkId}`,
+      source: targetId,
+      target: previewSinkId,
+    }),
+  };
+}
+
+function valueBrief(value: JsonValue | undefined): string {
+  if (value === undefined || value === null) return "";
+  if (Array.isArray(value)) return value.map(valueBrief).filter(Boolean).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function cleanNodeSummary(type: CleanNodeType, params: JsonObject = {}) {
+  if (type === "source") return ["当前数据集"];
+  if (type === "sink") return ["输出结果"];
+
+  if (type === "selectRename") {
+    const fields = Array.isArray(params.fields) ? params.fields : [];
+    return fields.slice(0, 3).map((field) => {
+      if (field && typeof field === "object" && !Array.isArray(field)) {
+        const from = valueBrief(field.from);
+        const to = valueBrief(field.to);
+        return `${from} → ${to}`;
+      }
+      return valueBrief(field);
+    });
+  }
+
+  if (type === "trim" || type === "dedupe") {
+    return [`字段：${valueBrief(params.fields) || "未配置"}`];
+  }
+
+  if (type === "replace") {
+    return [
+      `${valueBrief(params.field) || "字段"}：${valueBrief(params.from)} → ${valueBrief(params.to)}`,
+    ];
+  }
+
+  if (type === "typeCast") {
+    return [`${valueBrief(params.field) || "字段"} → ${valueBrief(params.target) || "类型"}`];
+  }
+
+  if (type === "filter") {
+    return [
+      `${valueBrief(params.field) || "字段"} ${valueBrief(params.op) || "条件"} ${valueBrief(params.value)}`,
+    ];
+  }
+
+  if (type === "derivedField") {
+    return [`${valueBrief(params.field) || "字段"} = ${valueBrief(params.template)}`];
+  }
+
+  return ["未配置"];
+}
+
+function CleanFlowNode({ id, data, selected }: NodeProps<FlowNode>) {
+  const isEndpoint = data.nodeType === "source" || data.nodeType === "sink";
+  const summaries = cleanNodeSummary(data.nodeType, data.params);
+
+  return (
+    <div
+      style={{
+        width: 220,
+        border: `1px solid ${selected ? "#1677ff" : "#d9d9d9"}`,
+        borderRadius: 8,
+        background: "#fff",
+        boxShadow: selected ? "0 0 0 2px rgba(22, 119, 255, 0.12)" : "0 2px 8px rgba(0, 0, 0, 0.08)",
+        overflow: "hidden",
+      }}
+    >
+      {data.nodeType === "source" ? null : <Handle type="target" position={Position.Left} />}
+      {data.nodeType === "sink" ? null : <Handle type="source" position={Position.Right} />}
+      <div
+        style={{
+          padding: "8px 10px",
+          borderBottom: "1px solid #f0f0f0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#fafafa",
+        }}
+      >
+        <Typography.Text strong ellipsis style={{ maxWidth: 170 }}>
+          {data.label}
+        </Typography.Text>
+        <Tag color={isEndpoint ? "blue" : "green"} style={{ marginInlineEnd: 0 }}>
+          {data.nodeType}
+        </Tag>
+      </div>
+      <div style={{ padding: 10, minHeight: 72 }}>
+        {summaries.length ? (
+          summaries.map((summary, index) => (
+            <Typography.Text
+              key={`${summary}-${index}`}
+              type="secondary"
+              ellipsis
+              style={{ display: "block", fontSize: 12, lineHeight: "22px" }}
+            >
+              {summary || "未配置"}
+            </Typography.Text>
+          ))
+        ) : (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            未配置
+          </Typography.Text>
+        )}
+      </div>
+      <div
+        style={{
+          padding: 8,
+          borderTop: "1px solid #f0f0f0",
+          display: "flex",
+          justifyContent: "center",
+          gap: 8,
+          background: "#fafafa",
+        }}
+      >
+        <Button
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onPreview?.(id);
+          }}
+        >
+          预览
+        </Button>
+        <Button
+          size="small"
+          icon={<SettingOutlined />}
+          onClick={(event) => {
+            event.stopPropagation();
+            data.onSettings?.(id);
+          }}
+        >
+          设置
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes = {
+  cleanNode: CleanFlowNode,
+};
 
 const CleanPipelineWorkbench = () => {
   const { storeId } = useParams();
@@ -299,17 +493,11 @@ const CleanPipelineWorkbench = () => {
     const id = `${type}-${Date.now()}`;
     const node: FlowNode = {
       id,
-      type: "default",
+      type: "cleanNode",
       position,
       data: {
         label: nodeTitle[type],
         nodeType: type,
-      },
-      style: {
-        borderColor: "#52c41a",
-        borderWidth: 2,
-        borderRadius: 8,
-        minWidth: 150,
       },
     };
     setNodes((oldNodes) => oldNodes.concat(node));
@@ -398,6 +586,47 @@ const CleanPipelineWorkbench = () => {
       setLoading(false);
     }
   };
+
+  const runNodePreview = useCallback(
+    async (nodeId: string) => {
+      if (!storeId) return;
+      setSelectedId(nodeId);
+      setLoading(true);
+      try {
+        const resp = await previewCleanPipeline(
+          storeId,
+          buildPreviewPipeline(pipeline, nodeId),
+          samples,
+          100,
+        );
+        setPreview(resp);
+        if (!resp.valid) {
+          message.error(resp.issues[0]?.message || "节点预览失败");
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pipeline, samples, storeId],
+  );
+
+  const openSettings = useCallback((nodeId: string) => {
+    openNodeSettings(nodeId, setSelectedId, setParamModalOpen);
+  }, []);
+
+  const renderNodes = useMemo<FlowNode[]>(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          params: nodeParams[node.id] || {},
+          onPreview: runNodePreview,
+          onSettings: openSettings,
+        },
+      })),
+    [nodeParams, nodes, openSettings, runNodePreview],
+  );
 
   const save = async () => {
     if (!storeId) return;
@@ -542,17 +771,16 @@ const CleanPipelineWorkbench = () => {
                   }}
                 >
                   <ReactFlow
-                    nodes={nodes}
+                    nodes={renderNodes}
                     edges={edges}
+                    nodeTypes={nodeTypes}
+                    proOptions={{ hideAttribution: true }}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     onDrop={onDrop}
                     onDragOver={onDragOver}
-                    onNodeClick={(_, node) => {
-                      setSelectedId(node.id);
-                      setParamModalOpen(true);
-                    }}
+                    onNodeClick={(_, node) => setSelectedId(node.id)}
                     fitView
                   >
                     <Background />
