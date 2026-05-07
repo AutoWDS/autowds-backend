@@ -1,4 +1,4 @@
-import { DeleteOutlined, ExportOutlined } from "@ant-design/icons";
+import { BranchesOutlined, DeleteOutlined, ExportOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
@@ -72,7 +72,7 @@ const getColumns = (
     },
     {
       title: i18n("popup_data_column_operate"),
-      width: 90,
+      width: 130,
       align: "center",
       render: (record: DataStoreMeta) => (
         <>
@@ -85,6 +85,11 @@ const getColumns = (
                 e.stopPropagation();
               }}
             />
+          </Tooltip>
+          <Tooltip title="数据清洗">
+            <Link to={`/data/${record.id}/clean`} onClick={(e) => e.stopPropagation()}>
+              <Button type="text" icon={<BranchesOutlined />} />
+            </Link>
           </Tooltip>
           <Popconfirm
             title={i18n("popup_data_actions_deleteTip")}

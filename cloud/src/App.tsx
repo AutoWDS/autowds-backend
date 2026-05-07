@@ -28,6 +28,7 @@ import { AuthUserDTO, currentUser, setAuthUser } from "api/user";
 import Alert from "page/Alert";
 import Home from "page/Home";
 import Pay from "page/Pay";
+import CleanPipeline from "page/data/CleanPipeline";
 import DataDetail from "page/data/DataDetail";
 import NewDataStore from "page/data/NewDataStore";
 import TaskInstance from "page/detail/TaskInstance";
@@ -215,6 +216,7 @@ function App() {
                   <Route path="RDB" Component={NewDataStore} />
                 </Route>
                 <Route path=":storeId/detail" Component={DataDetail} />
+                <Route path=":storeId/clean" Component={CleanPipeline} />
                 <Route path="*" Component={Data} />
               </Route>
               <Route path="/api" Component={Api} />

@@ -1,4 +1,5 @@
 mod admin;
+mod data_clean;
 mod pay;
 mod statistics;
 mod task;

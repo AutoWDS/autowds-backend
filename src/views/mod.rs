@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod data_clean;
 pub mod pay;
 pub mod statistics;
 pub mod task;

@@ -27,6 +27,7 @@ const breadcrumbNameMap: { [path: string]: string } = {
   "/data/store": "云端存储",
   "/data/db": "数据连接",
   "/data/sync": "数据同步",
+  "/data/clean": "数据清洗",
   "/data/db/new/MySQL": "新建MySQL连接",
   "/data/db/new/Postgresql": "新建PostgreSQL连接",
   "/data/db/new/Oracle": "新建Oracle连接",
@@ -59,7 +60,7 @@ function computeBreadcrumb(pathSnippets: string[]): BreadcrumbItem[] {
           ),
         };
       }
-      if (path.match(/^\d+$/g)) {
+      if (path.match(/^\d+$/g) || path.includes("-")) {
         return undefined;
       }
       const simpleURL = `/${pathSnippets

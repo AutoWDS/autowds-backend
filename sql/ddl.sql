@@ -125,3 +125,16 @@ create index idx_pay_order_user_id on pay_order(user_id);
 create index idx_pay_order_status on pay_order(status);
 create index idx_pay_order_created on pay_order(created);
 create index idx_pay_order_confirm on pay_order(confirm);
+
+--- data_clean_pipeline
+create table if not exists data_clean_pipeline (
+    id bigserial primary key,
+    user_id bigint not null,
+    store_id varchar(64) not null,
+    name varchar(80) not null,
+    definition jsonb not null,
+    created_at timestamp not null,
+    modified_at timestamp not null
+);
+create index if not exists idx_data_clean_pipeline_user_store_modified
+    on data_clean_pipeline(user_id, store_id, modified_at desc);
