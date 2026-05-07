@@ -20,7 +20,7 @@ const tabs = [
     label: (
       <>
         <CloudOutlined />
-        云端存储
+        数据集
       </>
     ),
   },

@@ -13,6 +13,7 @@ import {
   Input,
   List,
   message,
+  Modal,
   Row,
   Select,
   Space,
@@ -120,13 +121,21 @@ type FlowNode = Node<CleanNodeData>;
 type FlowEdge = Edge;
 
 function isJsonValue(value: JsonValue): value is JsonValue {
-  return value === null || ["string", "number", "boolean", "object"].includes(typeof value);
+  return (
+    value === null ||
+    ["string", "number", "boolean", "object"].includes(typeof value)
+  );
 }
 
 function parseJsonObject(value: string): JsonObject | null {
   try {
     const parsed = JSON.parse(value) as JsonValue;
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && isJsonValue(parsed)) {
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed) &&
+      isJsonValue(parsed)
+    ) {
       return parsed as JsonObject;
     }
   } catch (e) {
@@ -145,7 +154,8 @@ function toFlowNodes(pipeline: CleanPipelineDTO): FlowNode[] {
       nodeType: node.type,
     },
     style: {
-      borderColor: node.type === "source" || node.type === "sink" ? "#1677ff" : "#52c41a",
+      borderColor:
+        node.type === "source" || node.type === "sink" ? "#1677ff" : "#52c41a",
       borderWidth: 2,
       borderRadius: 8,
       minWidth: 150,
@@ -180,11 +190,17 @@ function isTransformNodeType(type: CleanNodeType): type is TransformNodeType {
 const CleanPipelineWorkbench = () => {
   const { storeId } = useParams();
   const { screenToFlowPosition } = useReactFlow<FlowNode, FlowEdge>();
-  const [pipelineName, setPipelineName] = useState(defaultPipeline.name || "默认清洗流程");
-  const [nodes, setNodes] = useState<FlowNode[]>(() => toFlowNodes(defaultPipeline));
-  const [edges, setEdges] = useState<FlowEdge[]>(() => toFlowEdges(defaultPipeline));
+  const [pipelineName, setPipelineName] = useState(
+    defaultPipeline.name || "默认清洗流程",
+  );
+  const [nodes, setNodes] = useState<FlowNode[]>(() =>
+    toFlowNodes(defaultPipeline),
+  );
+  const [edges, setEdges] = useState<FlowEdge[]>(() =>
+    toFlowEdges(defaultPipeline),
+  );
   const [nodeParams, setNodeParams] = useState<Record<string, JsonObject>>(() =>
-    paramsFromPipeline(defaultPipeline)
+    paramsFromPipeline(defaultPipeline),
   );
   const [selectedId, setSelectedId] = useState("source");
   const [paramText, setParamText] = useState("{}");
@@ -193,6 +209,7 @@ const CleanPipelineWorkbench = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [format, setFormat] = useState<CleanExportFormat>("json");
+  const [paramModalOpen, setParamModalOpen] = useState(false);
 
   const selectedNode = nodes.find((node) => node.id === selectedId);
   const selectedNodeType = selectedNode?.data.nodeType;
@@ -212,7 +229,7 @@ const CleanPipelineWorkbench = () => {
         target: edge.target,
       })),
     }),
-    [edges, nodeParams, nodes, pipelineName]
+    [edges, nodeParams, nodes, pipelineName],
   );
 
   const loadInitialData = useCallback(async () => {
@@ -223,7 +240,9 @@ const CleanPipelineWorkbench = () => {
         queryStoreData(storeId, { desc: true }),
       ]);
       if (pipelines[0]) {
-        setPipelineName(pipelines[0].name || pipelines[0].pipeline.name || "默认清洗流程");
+        setPipelineName(
+          pipelines[0].name || pipelines[0].pipeline.name || "默认清洗流程",
+        );
         setNodes(toFlowNodes(pipelines[0].pipeline));
         setEdges(toFlowEdges(pipelines[0].pipeline));
         setNodeParams(paramsFromPipeline(pipelines[0].pipeline));
@@ -244,13 +263,15 @@ const CleanPipelineWorkbench = () => {
   }, [nodeParams, selectedId]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<FlowNode>[]) => setNodes((oldNodes) => applyNodeChanges(changes, oldNodes)),
-    []
+    (changes: NodeChange<FlowNode>[]) =>
+      setNodes((oldNodes) => applyNodeChanges(changes, oldNodes)),
+    [],
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange<FlowEdge>[]) => setEdges((oldEdges) => applyEdgeChanges(changes, oldEdges)),
-    []
+    (changes: EdgeChange<FlowEdge>[]) =>
+      setEdges((oldEdges) => applyEdgeChanges(changes, oldEdges)),
+    [],
   );
 
   const onConnect = useCallback(
@@ -259,16 +280,22 @@ const CleanPipelineWorkbench = () => {
         addEdge(
           {
             ...connection,
-            id: uniqueEdgeId(connection.source || "node", connection.target || "node"),
+            id: uniqueEdgeId(
+              connection.source || "node",
+              connection.target || "node",
+            ),
             animated: true,
           },
-          oldEdges
-        )
+          oldEdges,
+        ),
       ),
-    []
+    [],
   );
 
-  const addNodeAt = (type: TransformNodeType, position: { x: number; y: number }) => {
+  const addNodeAt = (
+    type: TransformNodeType,
+    position: { x: number; y: number },
+  ) => {
     const id = `${type}-${Date.now()}`;
     const node: FlowNode = {
       id,
@@ -290,16 +317,24 @@ const CleanPipelineWorkbench = () => {
     setSelectedId(id);
   };
 
-  const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: TransformNodeType) => {
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: TransformNodeType,
+  ) => {
     event.dataTransfer.setData("application/autowds-clean-node", nodeType);
     event.dataTransfer.effectAllowed = "move";
   };
 
   const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const type = event.dataTransfer.getData("application/autowds-clean-node") as CleanNodeType;
+    const type = event.dataTransfer.getData(
+      "application/autowds-clean-node",
+    ) as CleanNodeType;
     if (!type || !isTransformNodeType(type)) return;
-    addNodeAt(type, screenToFlowPosition({ x: event.clientX, y: event.clientY }));
+    addNodeAt(
+      type,
+      screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+    );
   };
 
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -314,14 +349,22 @@ const CleanPipelineWorkbench = () => {
       return;
     }
     setNodeParams((oldParams) => ({ ...oldParams, [selectedId]: params }));
+    setParamModalOpen(false);
     message.success("节点参数已应用");
   };
 
   const removeSelected = () => {
-    if (!selectedNode || selectedNodeType === "source" || selectedNodeType === "sink") return;
+    if (
+      !selectedNode ||
+      selectedNodeType === "source" ||
+      selectedNodeType === "sink"
+    )
+      return;
     setNodes((oldNodes) => oldNodes.filter((node) => node.id !== selectedId));
     setEdges((oldEdges) =>
-      oldEdges.filter((edge) => edge.source !== selectedId && edge.target !== selectedId)
+      oldEdges.filter(
+        (edge) => edge.source !== selectedId && edge.target !== selectedId,
+      ),
     );
     setNodeParams((oldParams) => {
       const next = { ...oldParams };
@@ -329,6 +372,7 @@ const CleanPipelineWorkbench = () => {
       return next;
     });
     setSelectedId("source");
+    setParamModalOpen(false);
   };
 
   const validate = async () => {
@@ -359,7 +403,11 @@ const CleanPipelineWorkbench = () => {
     if (!storeId) return;
     setSaving(true);
     try {
-      await saveCleanPipeline(storeId, pipelineName || "未命名清洗流程", pipeline);
+      await saveCleanPipeline(
+        storeId,
+        pipelineName || "未命名清洗流程",
+        pipeline,
+      );
       message.success("清洗流程已保存");
     } finally {
       setSaving(false);
@@ -382,143 +430,217 @@ const CleanPipelineWorkbench = () => {
     title: field,
     dataIndex: field,
     ellipsis: true,
-    render: (value: JsonValue) => (typeof value === "object" ? JSON.stringify(value) : String(value ?? "")),
+    render: (value: JsonValue) =>
+      typeof value === "object" ? JSON.stringify(value) : String(value ?? ""),
   }));
 
   return (
-    <Row gutter={16} style={{ height: "100%" }}>
-      <Col span={16} style={{ height: "100%" }}>
-        <Card
-          title={<Space><BranchesOutlined />数据清洗 DAG</Space>}
-          extra={
-            <Space>
-              <Button onClick={validate}>校验</Button>
-              <Button icon={<PlayCircleOutlined />} loading={loading} onClick={runPreview}>
-                预览
-              </Button>
-              <Button icon={<SaveOutlined />} loading={saving} onClick={save}>
-                保存
-              </Button>
-              <Select value={format} onChange={setFormat} style={{ width: 110 }}>
-                <Select.Option value="json">JSON</Select.Option>
-                <Select.Option value="ndjson">NDJSON</Select.Option>
-                <Select.Option value="csv">CSV</Select.Option>
-              </Select>
-              <Button icon={<DownloadOutlined />} onClick={exportData}>
-                导出
-              </Button>
-            </Space>
-          }
-          style={{ height: "100%" }}
-          bodyStyle={{ height: "calc(100% - 57px)", display: "flex", flexDirection: "column", gap: 16 }}
-        >
-          <Space>
-            <Input
-              addonBefore="名称"
-              value={pipelineName}
-              onChange={(e) => setPipelineName(e.target.value)}
-              style={{ width: 260 }}
-            />
-            <Typography.Text type="secondary">
-              从左侧拖入算子，在画布中拖动节点，并从节点把手连线。
-            </Typography.Text>
-          </Space>
-          <Row gutter={12} style={{ flex: "0 0 420px", minHeight: 0 }}>
-            <Col span={5} style={{ height: "100%" }}>
-              <Card size="small" title="算子面板" style={{ height: "100%" }} bodyStyle={{ overflow: "auto" }}>
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  {nodeOptions.map((option) => (
-                    <Card
-                      key={option.value}
-                      size="small"
-                      hoverable
-                      draggable
-                      onDragStart={(event) => onDragStart(event, option.value)}
-                      onDoubleClick={() => addNodeAt(option.value, { x: 240, y: 120 })}
-                    >
-                      <Tag color="green">{option.label}</Tag>
-                      <Typography.Paragraph type="secondary" style={{ margin: "8px 0 0" }}>
-                        拖到画布添加
-                      </Typography.Paragraph>
-                    </Card>
-                  ))}
-                </Space>
-              </Card>
-            </Col>
-            <Col span={19} style={{ height: "100%" }}>
-              <div style={{ height: "100%", border: "1px solid #f0f0f0", borderRadius: 8 }}>
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                  onNodeClick={(_, node) => setSelectedId(node.id)}
-                  fitView
+    <>
+      <Row gutter={16} style={{ height: "100%" }}>
+        <Col span={24} style={{ height: "100%" }}>
+          <Card
+            title={
+              <Space>
+                <BranchesOutlined />
+                <Input
+                  placeholder="请输入清洗流程名称"
+                  value={pipelineName}
+                  onChange={(e) => setPipelineName(e.target.value)}
+                  style={{ width: 260 }}
+                />
+              </Space>
+            }
+            extra={
+              <Space>
+                <Button onClick={validate}>校验</Button>
+                <Button
+                  icon={<PlayCircleOutlined />}
+                  loading={loading}
+                  onClick={runPreview}
                 >
-                  <Background />
-                  <Controls />
-                  <MiniMap pannable zoomable />
-                </ReactFlow>
-              </div>
-            </Col>
-          </Row>
-          {preview ? (
-            preview.valid ? (
-              <Table
-                size="small"
-                rowKey={(_, index) => String(index)}
-                dataSource={preview.output as JsonObject[]}
-                columns={tableColumns}
-                pagination={{ pageSize: 10 }}
-              />
-            ) : (
-              <List
-                dataSource={preview.issues}
-                renderItem={(item) => <List.Item>{item.message}</List.Item>}
-              />
-            )
-          ) : (
-            <Empty description="点击预览后查看清洗结果" />
-          )}
-        </Card>
-      </Col>
-      <Col span={8} style={{ height: "100%" }}>
-        <Card
-          title="节点参数"
-          style={{ height: "100%" }}
-          bodyStyle={{ height: "calc(100% - 57px)", display: "flex", flexDirection: "column" }}
-        >
-          {selectedNode ? (
-            <>
-              <Alert
-                type="info"
-                showIcon
-                message={selectedNodeType ? nodeTitle[selectedNodeType] : "节点"}
-                description="参数使用 JSON 对象，字段名需与后端算子 DTO 对齐。"
-              />
-              <TextArea
-                value={paramText}
-                onChange={(e) => setParamText(e.target.value)}
-                style={{ flex: 1, marginTop: 16, fontFamily: "monospace" }}
-              />
-              <Space style={{ marginTop: 16 }}>
-                <Button type="primary" onClick={applyParams}>
-                  应用参数
+                  预览
                 </Button>
-                <Button danger disabled={selectedNodeType === "source" || selectedNodeType === "sink"} onClick={removeSelected}>
-                  删除节点
+                <Button icon={<SaveOutlined />} loading={saving} onClick={save}>
+                  保存
+                </Button>
+                <Select
+                  value={format}
+                  onChange={setFormat}
+                  style={{ width: 110 }}
+                >
+                  <Select.Option value="json">JSON</Select.Option>
+                  <Select.Option value="ndjson">NDJSON</Select.Option>
+                  <Select.Option value="csv">CSV</Select.Option>
+                </Select>
+                <Button icon={<DownloadOutlined />} onClick={exportData}>
+                  导出
                 </Button>
               </Space>
-            </>
+            }
+            style={{ height: "100%" }}
+            bodyStyle={{
+              height: "calc(100% - 57px)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
+            <Row gutter={12} style={{ height: "100%" }}>
+              <Col span={5} style={{ height: "100%" }}>
+                <Card
+                  size="small"
+                  title={
+                    <Space direction="vertical" size={0}>
+                      <span>算子面板</span>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12 }}
+                      >
+                        拖入算子，移动节点并连线
+                      </Typography.Text>
+                    </Space>
+                  }
+                  style={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                  bodyStyle={{ overflow: "auto" }}
+                >
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    {nodeOptions.map((option) => (
+                      <Card
+                        key={option.value}
+                        size="small"
+                        hoverable
+                        draggable
+                        onDragStart={(event) =>
+                          onDragStart(event, option.value)
+                        }
+                        onDoubleClick={() =>
+                          addNodeAt(option.value, { x: 240, y: 120 })
+                        }
+                      >
+                        <Tag color="green">{option.label}</Tag>
+                        <Typography.Paragraph
+                          type="secondary"
+                          style={{ margin: "8px 0 0" }}
+                        >
+                          拖到画布添加
+                        </Typography.Paragraph>
+                      </Card>
+                    ))}
+                  </Space>
+                </Card>
+              </Col>
+              <Col span={19} style={{ height: "100%" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    border: "1px solid #f0f0f0",
+                    borderRadius: 8,
+                  }}
+                >
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
+                    onNodeClick={(_, node) => {
+                      setSelectedId(node.id);
+                      setParamModalOpen(true);
+                    }}
+                    fitView
+                  >
+                    <Background />
+                    <Controls />
+                    <MiniMap pannable zoomable />
+                  </ReactFlow>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
+      {preview ? (
+        <Card
+          title="清洗预览"
+          style={{
+            position: "fixed",
+            left: 280,
+            right: 24,
+            bottom: 16,
+            zIndex: 10,
+            maxHeight: 320,
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+          }}
+          bodyStyle={{ maxHeight: 260, overflow: "auto" }}
+        >
+          {preview.valid ? (
+            <Table
+              size="small"
+              rowKey={(_, index) => String(index)}
+              dataSource={preview.output as JsonObject[]}
+              columns={tableColumns}
+              pagination={{ pageSize: 10 }}
+            />
           ) : (
-            <Empty />
+            <List
+              dataSource={preview.issues}
+              renderItem={(item) => <List.Item>{item.message}</List.Item>}
+            />
           )}
         </Card>
-      </Col>
-    </Row>
+      ) : null}
+      <Modal
+        title="节点参数"
+        open={paramModalOpen}
+        onCancel={() => setParamModalOpen(false)}
+        width={720}
+        destroyOnClose
+        footer={
+          selectedNode ? (
+            <Space>
+              <Button onClick={() => setParamModalOpen(false)}>取消</Button>
+              <Button
+                danger
+                disabled={
+                  selectedNodeType === "source" || selectedNodeType === "sink"
+                }
+                onClick={removeSelected}
+              >
+                删除节点
+              </Button>
+              <Button type="primary" onClick={applyParams}>
+                应用参数
+              </Button>
+            </Space>
+          ) : null
+        }
+      >
+        {selectedNode ? (
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Alert
+              type="info"
+              showIcon
+              message={selectedNodeType ? nodeTitle[selectedNodeType] : "节点"}
+              description="参数使用 JSON 对象，字段名需与后端算子 DTO 对齐。"
+            />
+            <TextArea
+              value={paramText}
+              onChange={(e) => setParamText(e.target.value)}
+              autoSize={{ minRows: 14, maxRows: 24 }}
+              style={{ fontFamily: "monospace" }}
+            />
+          </Space>
+        ) : (
+          <Empty />
+        )}
+      </Modal>
+    </>
   );
 };
 

@@ -2,6 +2,7 @@ mod admin;
 mod data_clean;
 mod pay;
 mod statistics;
+mod store;
 mod task;
 mod template;
 mod token;

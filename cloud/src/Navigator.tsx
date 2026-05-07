@@ -24,7 +24,7 @@ const breadcrumbNameMap: { [path: string]: string } = {
   "/task/myself/quality": "数据质量",
   "/task/myself/instances/data": "数据",
   "/task/myself/instances/log": "日志",
-  "/data/store": "云端存储",
+  "/data/store": "数据集",
   "/data/db": "数据连接",
   "/data/sync": "数据同步",
   "/data/clean": "数据清洗",

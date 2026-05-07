@@ -3,6 +3,7 @@ use crate::model::scraper_task::{self, ScheduleData, ScraperTaskData};
 use crate::model::sea_orm_active_enums::ProductEdition;
 use crate::model::task_instance;
 use crate::service::task_log::{TaskLogService, TaskLogSse};
+use crate::service::user::UserService;
 use crate::utils::jwt::{Claims, OptionalClaims};
 use crate::views::task::{ScraperTaskQuery, ScraperTaskReq, ScraperUpdateTaskReq};
 use crate::views::task_instance_capture::TaskInstanceCaptureItem;
@@ -11,8 +12,8 @@ use axum_valid::Valid;
 use chrono::Local;
 use itertools::Itertools;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, PaginatorTrait,
-    QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, DbConn, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, Set,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -26,7 +27,6 @@ use summer_web::axum::Json;
 use summer_web::error::{KnownWebError, Result};
 use summer_web::extractor::{AppRef, Component, Path, Query};
 use summer_web::{delete_api, get, get_api, patch_api, post_api, put_api};
-use crate::service::user::UserService;
 
 /// 检查用户任务数量限制
 async fn check_task_limit(
@@ -359,14 +359,9 @@ async fn update_task_cron(
         Err(KnownWebError::bad_request("cron 不能为空"))?;
     }
 
-    let mut new_data = task
-        .data
-        .clone()
-        .ok_or_else(|| {
-            KnownWebError::bad_request(
-                "任务尚未配置 data，请先使用 PATCH /task/{id}/schedule 配置调度",
-            )
-        })?;
+    let mut new_data = task.data.clone().ok_or_else(|| {
+        KnownWebError::bad_request("任务尚未配置 data，请先使用 PATCH /task/{id}/schedule 配置调度")
+    })?;
 
     let schedule = new_data.schedule.as_mut().ok_or_else(|| {
         KnownWebError::bad_request(
@@ -400,12 +395,7 @@ async fn get_task_schedule_info(
     Component(db): Component<DbConn>,
 ) -> Result<Json<Option<ScheduleData>>> {
     let task = ScraperTask::find_check_task(&db, id, claims.uid).await?;
-    Ok(Json(
-        task
-            .data
-            .as_ref()
-            .and_then(|d| d.schedule.clone()),
-    ))
+    Ok(Json(task.data.as_ref().and_then(|d| d.schedule.clone())))
 }
 
 async fn replace_cron_job(
@@ -513,9 +503,10 @@ fn task_instance_record_shard_table(user_id: i64) -> Option<String> {
         return None;
     }
     let name = format!("task_instance_record_{user_id}");
-    if name.chars().all(|c| {
-        c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_'
-    }) {
+    if name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+    {
         Some(name)
     } else {
         None
@@ -583,8 +574,8 @@ async fn query_instance_capture_records(
     };
 
     let total = std::cmp::max(count, 0i64) as u64;
-    let offset_i64 = i64::try_from(pagination.page.saturating_mul(pagination.size))
-        .unwrap_or(i64::MAX);
+    let offset_i64 =
+        i64::try_from(pagination.page.saturating_mul(pagination.size)).unwrap_or(i64::MAX);
     let limit_i64 = i64::try_from(pagination.size).unwrap_or(i64::MAX);
 
     let select_sql = format!(
@@ -614,10 +605,7 @@ async fn query_instance_capture_records(
 
     let mut content = Vec::with_capacity(rows.len());
     for row in rows {
-        content.push(
-            TaskInstanceCaptureItem::try_from_row(&row)
-                .context("解析采集记录行失败")?,
-        );
+        content.push(TaskInstanceCaptureItem::try_from_row(&row).context("解析采集记录行失败")?);
     }
 
     Ok(Json(Page::new(content, &pagination, total)))

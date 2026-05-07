@@ -1,10 +1,9 @@
-import { BranchesOutlined, DeleteOutlined, ExportOutlined } from "@ant-design/icons";
+import { BranchesOutlined, ExportOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
   DatePicker,
   Input,
-  Popconfirm,
   Space,
   Table,
   type TableColumnsType,
@@ -18,7 +17,7 @@ import prettyBytes from "pretty-bytes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatTime } from "utils/format";
 
-import { TableFilter, deleteDataStore, queryDataStore } from "api/data";
+import { TableFilter, queryDataStore } from "api/data";
 import i18n from "i18n";
 import { Link } from "react-router-dom";
 import { Page } from "types/Page";
@@ -31,12 +30,11 @@ import {
 } from "use-query-params";
 
 const getColumns = (
-  onDelete: (id: string) => void,
   onExport: (id: string) => void
 ): TableColumnsType<DataStoreMeta> => {
   return [
     {
-      title: "关联任务",
+      title: "数据集",
       ellipsis: { showTitle: false },
       render: ({ id, name }: DataStoreMeta) => (
         <Tooltip placement="topLeft" title={name}>
@@ -72,7 +70,7 @@ const getColumns = (
     },
     {
       title: i18n("popup_data_column_operate"),
-      width: 130,
+      width: 100,
       align: "center",
       render: (record: DataStoreMeta) => (
         <>
@@ -91,16 +89,6 @@ const getColumns = (
               <Button type="text" icon={<BranchesOutlined />} />
             </Link>
           </Tooltip>
-          <Popconfirm
-            title={i18n("popup_data_actions_deleteTip")}
-            onConfirm={() => onDelete(record.id)}
-          >
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </Popconfirm>
         </>
       ),
     },
@@ -133,14 +121,10 @@ const Store = () => {
   }, [fetchData]);
 
   const columns = useMemo(() => {
-    const handleDelete = async (storeId: string) => {
-      await deleteDataStore(storeId);
-      await fetchData();
-    };
     const handleExport = async () => {
       await selectDataExporter();
     };
-    return getColumns(handleDelete, handleExport);
+    return getColumns(handleExport);
   }, [fetchData]);
 
   const handleChange: NonNullable<TableProps<DataStoreMeta>["onChange"]> = (
@@ -157,13 +141,13 @@ const Store = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Alert
-        message="已采集的数据在云端只保留10天，请及时将数据同步到自己的数据库"
+        message="数据集按任务聚合展示采集结果，可进入详情查看任务级数据，或打开清洗工作台进行预览和导出。"
         type="info"
         showIcon
       />
       <Space style={{ margin: "16px 0" }}>
         <Input
-          addonBefore="关联任务"
+          addonBefore="数据集"
           onChange={(e) => setQuery({ name: e.target.value })}
         />
         <DatePicker.RangePicker
@@ -182,13 +166,13 @@ const Store = () => {
         loading={loading}
         scroll={{ y: "100%" }}
         showSorterTooltip={false}
-          onChange={handleChange}
+        onChange={handleChange}
         style={{ flex: 1, borderRadius: 8, background: colorBgContainer }}
         pagination={{
           pageSize: data?.size,
           current: (data?.number || 0) + 1,
           total: data?.totalElements,
-          onChange: (page, size) => setQuery({ page, size }),
+          onChange: (page, size) => setQuery({ page: page - 1, size }),
         }}
       />
     </div>

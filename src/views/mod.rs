@@ -2,6 +2,7 @@ pub mod admin;
 pub mod data_clean;
 pub mod pay;
 pub mod statistics;
+pub mod store;
 pub mod task;
 pub mod task_instance_capture;
 pub mod template;
