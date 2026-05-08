@@ -42,6 +42,10 @@ pub struct RegisterReq {
     /// # 邀请码（可选）
     #[validate(length(max = 32, message = "邀请码过长"))]
     pub invite_code: Option<String>,
+
+    /// # 营销归因 token（可选）
+    #[validate(length(max = 80, message = "营销归因 token 过长"))]
+    pub mtk: Option<String>,
 }
 
 #[derive(Debug, Validate, Deserialize, JsonSchema)]

@@ -3,6 +3,11 @@
 pub use super::account_user::Entity as AccountUser;
 pub use super::credit_log::Entity as CreditLog;
 pub use super::favorite::Entity as Favorite;
+pub use super::marketing_attribution::Entity as MarketingAttribution;
+pub use super::marketing_campaign::Entity as MarketingCampaign;
+pub use super::marketing_delivery::Entity as MarketingDelivery;
+pub use super::marketing_event::Entity as MarketingEvent;
+pub use super::marketing_lead::Entity as MarketingLead;
 pub use super::pay_order::Entity as PayOrder;
 pub use super::scraper_task::Entity as ScraperTask;
 pub use super::task_instance::Entity as TaskInstance;

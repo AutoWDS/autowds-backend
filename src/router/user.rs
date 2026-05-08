@@ -5,7 +5,7 @@ use crate::{
         prelude::AccountUser,
         sea_orm_active_enums::{CreditOperation, ProductEdition},
     },
-    router::ClientIp,
+    router::{admin::marketing as marketing_router, ClientIp},
     service::credit::CreditService,
     service::user::UserService,
     utils::{
@@ -131,6 +131,12 @@ async fn register(
 
     // 提交事务
     txn.commit().await.context("提交事务失败")?;
+
+    if let Some(mtk) = body.mtk.as_deref().filter(|v| !v.trim().is_empty()) {
+        if let Err(e) = marketing_router::record_register_by_token(&db, user.id, mtk).await {
+            tracing::warn!("record marketing register attribution failed: {e:#}");
+        }
+    }
 
     let claims = Claims::new(user.clone());
     let token = jwt::encode(claims)?;

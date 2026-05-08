@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import UserList from './pages/User/UserList'
 import TaskList from './pages/Task/TaskList'
 import TemplateList from './pages/Template/TemplateList'
+import Marketing from './pages/Marketing'
 import { useAuthStore } from './store/auth'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="users" element={<UserList />} />
           <Route path="tasks" element={<TaskList />} />
           <Route path="templates" element={<TemplateList />} />
+          <Route path="marketing/*" element={<Marketing />} />
         </Route>
       </Routes>
     </BrowserRouter>

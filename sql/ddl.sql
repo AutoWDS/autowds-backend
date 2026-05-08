@@ -138,3 +138,92 @@ create table if not exists data_clean_pipeline (
 );
 create index if not exists idx_data_clean_pipeline_user_store_modified
     on data_clean_pipeline(user_id, store_id, modified_at desc);
+
+--- marketing
+create sequence if not exists seq_marketing_lead;
+create table if not exists marketing_lead (
+    id bigint primary key default nextval('seq_marketing_lead'),
+    email varchar(128) not null,
+    name varchar(80) null,
+    source varchar(80) null,
+    tags jsonb null,
+    extra jsonb null,
+    status varchar(32) not null default 'active',
+    unsubscribed boolean not null default false,
+    created_at timestamp not null default current_timestamp,
+    modified_at timestamp not null default current_timestamp,
+    last_seen_at timestamp null,
+    unique (email)
+);
+create index if not exists idx_marketing_lead_email on marketing_lead(email);
+create index if not exists idx_marketing_lead_source_created on marketing_lead(source, created_at desc);
+
+create sequence if not exists seq_marketing_campaign;
+create table if not exists marketing_campaign (
+    id bigint primary key default nextval('seq_marketing_campaign'),
+    name varchar(120) not null,
+    subject varchar(200) not null,
+    landing_url varchar(500) not null,
+    status varchar(32) not null default 'draft',
+    created_by bigint not null,
+    created_at timestamp not null default current_timestamp,
+    modified_at timestamp not null default current_timestamp,
+    scheduled_at timestamp null,
+    provider_receiver_id varchar(100) null,
+    provider_template_id varchar(100) null,
+    provider_task_id varchar(100) null
+);
+create index if not exists idx_marketing_campaign_status_created
+    on marketing_campaign(status, created_at desc);
+
+create sequence if not exists seq_marketing_delivery;
+create table if not exists marketing_delivery (
+    id bigint primary key default nextval('seq_marketing_delivery'),
+    campaign_id bigint not null references marketing_campaign(id),
+    lead_id bigint not null references marketing_lead(id),
+    email varchar(128) not null,
+    token varchar(80) unique not null,
+    status varchar(32) not null default 'pending',
+    sent_at timestamp null,
+    provider_task_id varchar(100) null,
+    provider_message_id varchar(200) null,
+    error_message text null,
+    created_at timestamp not null default current_timestamp,
+    modified_at timestamp not null default current_timestamp,
+    unique (campaign_id, lead_id)
+);
+create index if not exists idx_marketing_delivery_campaign_status
+    on marketing_delivery(campaign_id, status);
+create index if not exists idx_marketing_delivery_provider_task_email
+    on marketing_delivery(provider_task_id, email);
+create index if not exists idx_marketing_delivery_token
+    on marketing_delivery(token);
+
+create sequence if not exists seq_marketing_event;
+create table if not exists marketing_event (
+    id bigint primary key default nextval('seq_marketing_event'),
+    campaign_id bigint null references marketing_campaign(id),
+    delivery_id bigint null references marketing_delivery(id),
+    lead_id bigint null references marketing_lead(id),
+    event_type varchar(40) not null,
+    url text null,
+    user_agent text null,
+    ip_hash varchar(128) null,
+    created_at timestamp not null default current_timestamp,
+    meta jsonb null
+);
+create index if not exists idx_marketing_event_campaign_type_created
+    on marketing_event(campaign_id, event_type, created_at desc);
+create index if not exists idx_marketing_event_delivery_type_created
+    on marketing_event(delivery_id, event_type, created_at desc);
+
+create table if not exists marketing_attribution (
+    user_id bigint primary key references account_user(id),
+    lead_id bigint null references marketing_lead(id),
+    campaign_id bigint null references marketing_campaign(id),
+    delivery_id bigint null references marketing_delivery(id),
+    first_touch_at timestamp not null default current_timestamp,
+    register_at timestamp not null default current_timestamp
+);
+create index if not exists idx_marketing_attribution_campaign
+    on marketing_attribution(campaign_id, register_at desc);

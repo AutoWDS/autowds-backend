@@ -14,6 +14,8 @@ use crate::{
     },
     views::admin::*,
 };
+
+pub(crate) mod marketing;
 use anyhow::Context;
 use axum_valid::Valid;
 use sea_orm::{

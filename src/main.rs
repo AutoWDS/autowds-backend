@@ -7,6 +7,8 @@ mod task;
 mod utils;
 mod views;
 
+use plugin::pay::PayPlugin;
+use plugin::s3::S3Plugin;
 use summer::App;
 use summer_apalis::{ApalisConfigurator, ApalisPlugin};
 use summer_job::JobPlugin;
@@ -15,8 +17,6 @@ use summer_redis::RedisPlugin;
 use summer_sea_orm::SeaOrmPlugin;
 use summer_sqlx::SqlxPlugin;
 use summer_web::{WebConfigurator, WebPlugin};
-use plugin::pay::PayPlugin;
-use plugin::s3::S3Plugin;
 
 #[tokio::main]
 async fn main() {

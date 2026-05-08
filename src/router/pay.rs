@@ -3,6 +3,7 @@ use crate::{
         pay_order::{self, Entity as PayOrder},
         sea_orm_active_enums::{OrderLevel, OrderStatus, PayFrom, ProductEdition},
     },
+    router::admin::marketing as marketing_router,
     service::{pay::PayOrderService, user::UserService},
     utils::jwt::Claims,
 };
@@ -80,6 +81,7 @@ async fn pay_status(
 async fn wechat_pay_callback(
     Component(ps): Component<PayOrderService>,
     Component(us): Component<UserService>,
+    Component(db): Component<DbConn>,
     headers: HeaderMap,
     body: String,
 ) -> Result<Json<serde_json::Value>, Response> {
@@ -137,6 +139,9 @@ async fn wechat_pay_callback(
         }
         Ok(u) => {
             tracing::info!("confirm_user({user_id},{level:?}) success>>>{u:?}");
+            if let Err(e) = marketing_router::record_purchase_by_user(&db, user_id).await {
+                tracing::warn!("record marketing purchase failed: {e:#}");
+            }
         }
     }
 
@@ -148,6 +153,7 @@ async fn wechat_pay_callback(
 async fn alipay_callback(
     Component(ps): Component<PayOrderService>,
     Component(us): Component<UserService>,
+    Component(db): Component<DbConn>,
     body: axum::body::Bytes,
 ) -> Result<&'static str, Response> {
     if let Err(e) = ps.alipay_verify_sign(&body).await {
@@ -175,6 +181,9 @@ async fn alipay_callback(
         }
         Ok(u) => {
             tracing::info!("confirm_user({user_id},{level:?}) success>>>{u:?}");
+            if let Err(e) = marketing_router::record_purchase_by_user(&db, user_id).await {
+                tracing::warn!("record marketing purchase failed: {e:#}");
+            }
         }
     }
 
@@ -186,6 +195,7 @@ async fn alipay_callback(
 async fn paddle_callback(
     Component(ps): Component<PayOrderService>,
     Component(us): Component<UserService>,
+    Component(db): Component<DbConn>,
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> Result<Json<serde_json::Value>, Response> {
@@ -223,6 +233,9 @@ async fn paddle_callback(
             }
             Ok(u) => {
                 tracing::info!("confirm_user({user_id},{level:?}) success>>>{u:?}");
+                if let Err(e) = marketing_router::record_purchase_by_user(&db, user_id).await {
+                    tracing::warn!("record marketing purchase failed: {e:#}");
+                }
             }
         }
     }

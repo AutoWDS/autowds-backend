@@ -261,10 +261,7 @@ impl TaskLogService {
         }
     }
 
-    async fn remove_live_log_stream(
-        stream_key: &str,
-        sender: &broadcast::Sender<LiveLogEvent>,
-    ) {
+    async fn remove_live_log_stream(stream_key: &str, sender: &broadcast::Sender<LiveLogEvent>) {
         let mut streams = LIVE_LOG_STREAMS.lock().await;
         if streams
             .get(stream_key)

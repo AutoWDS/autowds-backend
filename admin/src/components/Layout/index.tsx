@@ -8,6 +8,7 @@ import {
   LogoutOutlined,
   SettingOutlined,
   AppstoreOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "@/store/auth";
 import type { MenuProps } from "antd";
@@ -40,6 +41,11 @@ const Layout = () => {
       key: "/templates",
       icon: <FileTextOutlined />,
       label: "模板管理",
+    },
+    {
+      key: "/marketing",
+      icon: <MailOutlined />,
+      label: "营销获客",
     },
   ];
 
@@ -87,7 +93,7 @@ const Layout = () => {
         </div>
         <Menu
           theme="dark"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[`/${location.pathname.split('/')[1] || ''}`]}
           mode="inline"
           items={menuItems}
           onClick={handleMenuClick}
