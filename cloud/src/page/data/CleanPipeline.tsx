@@ -1,5 +1,6 @@
 import {
   BranchesOutlined,
+  CloseOutlined,
   DownloadOutlined,
   EyeOutlined,
   PlayCircleOutlined,
@@ -210,7 +211,10 @@ function openNodeSettings(
   setParamModalOpen(true);
 }
 
-function buildPreviewPipeline(pipeline: CleanPipelineDTO, targetId: string): CleanPipelineDTO {
+function buildPreviewPipeline(
+  pipeline: CleanPipelineDTO,
+  targetId: string,
+): CleanPipelineDTO {
   const target = pipeline.nodes.find((node) => node.id === targetId);
   if (!target || target.type === "sink") return pipeline;
 
@@ -255,7 +259,8 @@ function buildPreviewPipeline(pipeline: CleanPipelineDTO, targetId: string): Cle
 
 function valueBrief(value: JsonValue | undefined): string {
   if (value === undefined || value === null) return "";
-  if (Array.isArray(value)) return value.map(valueBrief).filter(Boolean).join(", ");
+  if (Array.isArray(value))
+    return value.map(valueBrief).filter(Boolean).join(", ");
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
@@ -269,7 +274,10 @@ function valueProfileKey(value: JsonValue | undefined): string {
   return JSON.stringify(value);
 }
 
-function buildColumnProfiles(records: JsonValue[], fields: string[]): ColumnProfile[] {
+function buildColumnProfiles(
+  records: JsonValue[],
+  fields: string[],
+): ColumnProfile[] {
   return fields.map((field) => {
     const counter = new Map<string, ColumnValueProfile>();
     records.forEach((record) => {
@@ -321,7 +329,9 @@ function cleanNodeSummary(type: CleanNodeType, params: JsonObject = {}) {
   }
 
   if (type === "typeCast") {
-    return [`${valueBrief(params.field) || "字段"} → ${valueBrief(params.target) || "类型"}`];
+    return [
+      `${valueBrief(params.field) || "字段"} → ${valueBrief(params.target) || "类型"}`,
+    ];
   }
 
   if (type === "filter") {
@@ -331,7 +341,9 @@ function cleanNodeSummary(type: CleanNodeType, params: JsonObject = {}) {
   }
 
   if (type === "derivedField") {
-    return [`${valueBrief(params.field) || "字段"} = ${valueBrief(params.template)}`];
+    return [
+      `${valueBrief(params.field) || "字段"} = ${valueBrief(params.template)}`,
+    ];
   }
 
   return ["未配置"];
@@ -348,12 +360,18 @@ function CleanFlowNode({ id, data, selected }: NodeProps<FlowNode>) {
         border: `1px solid ${selected ? "#1677ff" : "#d9d9d9"}`,
         borderRadius: 8,
         background: "#fff",
-        boxShadow: selected ? "0 0 0 2px rgba(22, 119, 255, 0.12)" : "0 2px 8px rgba(0, 0, 0, 0.08)",
+        boxShadow: selected
+          ? "0 0 0 2px rgba(22, 119, 255, 0.12)"
+          : "0 2px 8px rgba(0, 0, 0, 0.08)",
         overflow: "hidden",
       }}
     >
-      {data.nodeType === "source" ? null : <Handle type="target" position={Position.Left} />}
-      {data.nodeType === "sink" ? null : <Handle type="source" position={Position.Right} />}
+      {data.nodeType === "source" ? null : (
+        <Handle type="target" position={Position.Left} />
+      )}
+      {data.nodeType === "sink" ? null : (
+        <Handle type="source" position={Position.Right} />
+      )}
       <div
         style={{
           padding: "8px 10px",
@@ -367,7 +385,10 @@ function CleanFlowNode({ id, data, selected }: NodeProps<FlowNode>) {
         <Typography.Text strong ellipsis style={{ maxWidth: 170 }}>
           {data.label}
         </Typography.Text>
-        <Tag color={isEndpoint ? "blue" : "green"} style={{ marginInlineEnd: 0 }}>
+        <Tag
+          color={isEndpoint ? "blue" : "green"}
+          style={{ marginInlineEnd: 0 }}
+        >
           {data.nodeType}
         </Tag>
       </div>
@@ -713,9 +734,7 @@ const CleanPipelineWorkbench = () => {
   }));
   const columnProfiles = useMemo(
     () =>
-      preview?.valid
-        ? buildColumnProfiles(preview.output, preview.schema)
-        : [],
+      preview?.valid ? buildColumnProfiles(preview.output, preview.schema) : [],
     [preview],
   );
 
@@ -729,7 +748,9 @@ const CleanPipelineWorkbench = () => {
     const sink = nodes.find((node) => node.data.nodeType === "sink");
     const sinkId = sink?.id || "sink";
     const incoming = edges.filter((edge) => edge.target === sinkId);
-    const sources = incoming.length ? incoming.map((edge) => edge.source) : ["source"];
+    const sources = incoming.length
+      ? incoming.map((edge) => edge.source)
+      : ["source"];
     const sourceNode = nodes.find((node) => node.id === sources[0]);
     const position = {
       x: (sourceNode?.position.x || 320) + 260,
@@ -788,14 +809,15 @@ const CleanPipelineWorkbench = () => {
       rowKey={(_, index) => String(index)}
       dataSource={(preview?.output || []) as JsonObject[]}
       columns={tableColumns}
-      pagination={{ pageSize: 10 }}
+      pagination={false}
+      scroll={{ x: "max-content", y: 220 }}
     />
   );
 
   const renderColumnsPreview = () => (
-    <Row gutter={12}>
+    <div style={{ display: "flex", flexWrap: "nowrap", overflowX: "auto" }}>
       {columnProfiles.map((profile) => (
-        <Col key={profile.field} span={6} style={{ marginBottom: 12 }}>
+        <div key={profile.field} style={{ flex: "0 0 220px" }}>
           <Card
             size="small"
             title={
@@ -806,6 +828,7 @@ const CleanPipelineWorkbench = () => {
                 </Typography.Text>
               </Space>
             }
+            style={{ borderRadius: 0 }}
             bodyStyle={{ maxHeight: 220, overflow: "auto", padding: 8 }}
           >
             <Space direction="vertical" style={{ width: "100%" }} size={8}>
@@ -819,7 +842,9 @@ const CleanPipelineWorkbench = () => {
                       paddingBottom: 8,
                     }}
                   >
-                    <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                    <Space
+                      style={{ width: "100%", justifyContent: "space-between" }}
+                    >
                       <Typography.Text ellipsis style={{ maxWidth: 130 }}>
                         {item.label}
                       </Typography.Text>
@@ -855,19 +880,19 @@ const CleanPipelineWorkbench = () => {
               })}
             </Space>
           </Card>
-        </Col>
+        </div>
       ))}
-    </Row>
+    </div>
   );
 
   const renderValidPreview = () => {
     if (previewMode === "rows") return renderRowsPreview();
     if (previewMode === "columns") return renderColumnsPreview();
     return (
-      <Row gutter={12}>
-        <Col span={9}>{renderColumnsPreview()}</Col>
-        <Col span={15}>{renderRowsPreview()}</Col>
-      </Row>
+      <Space direction="vertical" style={{ width: "100%" }} size={12}>
+        {renderColumnsPreview()}
+        {renderRowsPreview()}
+      </Space>
     );
   };
 
@@ -1018,8 +1043,16 @@ const CleanPipelineWorkbench = () => {
               />
             </Space>
           }
+          extra={
+            <Button
+              type="text"
+              size="small"
+              icon={<CloseOutlined />}
+              onClick={() => setPreview(undefined)}
+            />
+          }
           style={{
-            position: "fixed",
+            position: "absolute",
             left: 0,
             right: 0,
             bottom: 0,
@@ -1027,7 +1060,7 @@ const CleanPipelineWorkbench = () => {
             maxHeight: 420,
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
           }}
-          bodyStyle={{ maxHeight: 350, overflow: "auto" }}
+          bodyStyle={{ maxHeight: "40vh", overflow: "auto", padding: 0 }}
         >
           {preview.valid ? (
             renderValidPreview()
