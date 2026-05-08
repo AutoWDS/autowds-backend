@@ -73,6 +73,8 @@ aws-sdk-s3 = { version = "1", default-features = false, features = [
     "behavior-version-latest",
     "rustls",
 ] }
+duckdb = { version = "1.10502.0", features = ["bundled", "parquet"] }
+tempfile = "3.27.0"
 
 [patch.crates-io]
 axum-valid = { git = "https://github.com/holmofy/axum-valid", branch = "patch-1" }

@@ -5,8 +5,17 @@ use crate::views::data_clean::{
     TypeCastTarget,
 };
 use anyhow::{anyhow, Context, Result};
+use duckdb::Connection;
 use serde_json::{Map, Number, Value};
 use std::collections::{HashMap, HashSet, VecDeque};
+use tempfile::tempdir;
+
+#[derive(Debug, Clone)]
+pub struct RuleFieldProjection {
+    pub output_name: String,
+    pub node_id: String,
+    pub field_id: String,
+}
 
 pub fn validate_pipeline(pipeline: &CleanPipeline) -> CleanValidationResp {
     let issues = collect_issues(pipeline);
@@ -20,6 +29,7 @@ pub fn preview_pipeline(
     pipeline: &CleanPipeline,
     records: Vec<Value>,
     limit: Option<usize>,
+    rule: Option<&Value>,
 ) -> Result<CleanPreviewResp> {
     let validation = validate_pipeline(pipeline);
     if !validation.valid {
@@ -34,11 +44,11 @@ pub fn preview_pipeline(
         });
     }
 
-    let input = records
+    let input = flatten_records_by_rule(records, rule)?
         .into_iter()
         .take(limit.unwrap_or(100))
         .collect::<Vec<_>>();
-    let output = execute_linear_pipeline(pipeline, input.clone())?;
+    let output = execute_duckdb_pipeline(pipeline, input.clone(), None)?;
     let schema = infer_schema(&output);
 
     Ok(CleanPreviewResp {
@@ -57,13 +67,14 @@ pub fn export_pipeline(
     records: Vec<Value>,
     format: CleanExportFormat,
     store_id: &str,
+    rule: Option<&Value>,
 ) -> Result<CleanExportResp> {
     let validation = validate_pipeline(pipeline);
     if !validation.valid {
         return Err(anyhow!("清洗流程校验失败"));
     }
 
-    let output = execute_linear_pipeline(pipeline, records)?;
+    let output = execute_duckdb_pipeline(pipeline, flatten_records_by_rule(records, rule)?, None)?;
     let (extension, mime_type, content) = match format {
         CleanExportFormat::Json => (
             "json",
@@ -89,6 +100,116 @@ pub fn export_pipeline(
         content,
         row_count: output.len(),
     })
+}
+
+pub fn rule_field_projections(rule: Option<&Value>) -> Vec<RuleFieldProjection> {
+    let Some(Value::Object(rule)) = rule else {
+        return vec![];
+    };
+    let Some(Value::Array(nodes)) = rule.get("nodes") else {
+        return vec![];
+    };
+
+    let mut raw = Vec::new();
+    for node in nodes {
+        let Value::Object(node) = node else {
+            continue;
+        };
+        let Some(node_id) = node.get("id").and_then(Value::as_str) else {
+            continue;
+        };
+        let Some(fields) = node
+            .get("config")
+            .and_then(|config| config.get("fields"))
+            .and_then(Value::as_array)
+        else {
+            continue;
+        };
+        for field in fields {
+            let Value::Object(field) = field else {
+                continue;
+            };
+            let Some(field_id) = field.get("id").and_then(Value::as_str) else {
+                continue;
+            };
+            let display_name = field
+                .get("name")
+                .and_then(Value::as_str)
+                .filter(|name| !name.trim().is_empty())
+                .unwrap_or(field_id)
+                .trim()
+                .to_string();
+            raw.push((node_id.to_string(), field_id.to_string(), display_name));
+        }
+    }
+
+    let mut name_counts = HashMap::new();
+    for (_, _, name) in &raw {
+        *name_counts.entry(name.clone()).or_insert(0usize) += 1;
+    }
+
+    raw.into_iter()
+        .map(|(node_id, field_id, name)| {
+            let output_name = if name_counts.get(&name).copied().unwrap_or_default() > 1 {
+                format!("{node_id}.{name}")
+            } else {
+                name
+            };
+            RuleFieldProjection {
+                output_name,
+                node_id,
+                field_id,
+            }
+        })
+        .collect()
+}
+
+pub fn flatten_records_by_rule(records: Vec<Value>, rule: Option<&Value>) -> Result<Vec<Value>> {
+    let projections = rule_field_projections(rule);
+    if projections.is_empty() {
+        return Ok(records.into_iter().map(flatten_nested_record).collect());
+    }
+
+    Ok(records
+        .into_iter()
+        .map(|record| {
+            let mut output = Map::new();
+            for projection in &projections {
+                let value = record
+                    .get(&projection.node_id)
+                    .and_then(|node| node.get(&projection.field_id))
+                    .cloned()
+                    .unwrap_or(Value::Null);
+                output.insert(projection.output_name.clone(), value);
+            }
+            Value::Object(output)
+        })
+        .collect())
+}
+
+fn flatten_nested_record(record: Value) -> Value {
+    let Value::Object(map) = record else {
+        return record;
+    };
+    let has_nested_object = map.values().any(|value| matches!(value, Value::Object(_)));
+    if !has_nested_object {
+        return Value::Object(map);
+    }
+
+    let mut output = Map::new();
+    for (node_id, value) in map {
+        match value {
+            Value::Object(fields) => {
+                for (field_id, field_value) in fields {
+                    output.insert(format!("{node_id}.{field_id}"), field_value);
+                }
+            }
+            other => {
+                output.insert(node_id, other);
+            }
+        }
+    }
+    Value::Object(output)
 }
 
 fn collect_issues(pipeline: &CleanPipeline) -> Vec<CleanValidationIssue> {
@@ -265,6 +386,441 @@ fn execute_linear_pipeline(
         }
     }
     Ok(records)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DuckFieldType {
+    String,
+    Number,
+    Boolean,
+}
+
+struct DuckExecutionState {
+    table: String,
+    fields: Vec<String>,
+    field_types: HashMap<String, DuckFieldType>,
+}
+
+fn execute_duckdb_pipeline(
+    pipeline: &CleanPipeline,
+    records: Vec<Value>,
+    limit: Option<usize>,
+) -> Result<Vec<Value>> {
+    if records.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let conn = Connection::open_in_memory().context("创建 DuckDB 内存连接失败")?;
+    let temp_dir = tempdir().context("创建 Parquet 临时目录失败")?;
+    let parquet_path = temp_dir.path().join("clean-input.parquet");
+    let parquet_path = parquet_path
+        .to_str()
+        .ok_or_else(|| anyhow!("Parquet 临时路径不是有效 UTF-8"))?;
+
+    let fields = infer_schema(&records);
+    if fields.is_empty() {
+        return Ok(records);
+    }
+    create_input_table(&conn, &records, &fields)?;
+    conn.execute_batch(&format!(
+        "COPY input_records TO {} (FORMAT PARQUET); \
+         CREATE TABLE clean_step_0 AS SELECT * FROM read_parquet({});",
+        sql_literal(parquet_path),
+        sql_literal(parquet_path),
+    ))
+    .context("写入并读取 Parquet 临时数据失败")?;
+
+    let mut state = DuckExecutionState {
+        table: "clean_step_0".to_string(),
+        fields: fields.clone(),
+        field_types: fields
+            .into_iter()
+            .map(|field| (field, DuckFieldType::String))
+            .collect(),
+    };
+
+    for (step, node) in topo_sort(pipeline)?.into_iter().enumerate() {
+        if matches!(node.node_type, CleanNodeType::Source | CleanNodeType::Sink) {
+            continue;
+        }
+        let next_table = format!("clean_step_{}", step + 1);
+        apply_duckdb_node(&conn, &mut state, node, &next_table)?;
+        state.table = next_table;
+    }
+
+    query_duckdb_rows(&conn, &state, limit)
+}
+
+fn create_input_table(conn: &Connection, records: &[Value], fields: &[String]) -> Result<()> {
+    let columns = fields
+        .iter()
+        .map(|field| format!("{} VARCHAR", quote_ident(field)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    conn.execute_batch(&format!("CREATE TABLE input_records ({columns});"))
+        .context("创建 DuckDB 输入表失败")?;
+
+    for record in records {
+        let Value::Object(map) = record else {
+            continue;
+        };
+        let values = fields
+            .iter()
+            .map(|field| {
+                map.get(field)
+                    .filter(|value| !value.is_null())
+                    .map(|value| sql_literal(&value_to_string(value)))
+                    .unwrap_or_else(|| "NULL".to_string())
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        conn.execute_batch(&format!("INSERT INTO input_records VALUES ({values});"))
+            .context("写入 DuckDB 输入数据失败")?;
+    }
+    Ok(())
+}
+
+fn apply_duckdb_node(
+    conn: &Connection,
+    state: &mut DuckExecutionState,
+    node: &CleanNode,
+    next_table: &str,
+) -> Result<()> {
+    match node.node_type {
+        CleanNodeType::Source | CleanNodeType::Sink => {}
+        CleanNodeType::SelectRename => {
+            let params: SelectRenameParams = parse_params(node)?;
+            let select = params
+                .fields
+                .iter()
+                .map(|field| format!("{} AS {}", quote_ident(&field.from), quote_ident(&field.to)))
+                .collect::<Vec<_>>()
+                .join(", ");
+            conn.execute_batch(&format!(
+                "CREATE TABLE {} AS SELECT {select} FROM {};",
+                quote_ident(next_table),
+                quote_ident(&state.table),
+            ))
+            .context("执行 Select/Rename 清洗失败")?;
+            state.field_types = params
+                .fields
+                .iter()
+                .map(|field| {
+                    (
+                        field.to.clone(),
+                        state
+                            .field_types
+                            .get(&field.from)
+                            .copied()
+                            .unwrap_or(DuckFieldType::String),
+                    )
+                })
+                .collect();
+            state.fields = params.fields.into_iter().map(|field| field.to).collect();
+        }
+        CleanNodeType::Trim => {
+            let params: FieldListParams = parse_params(node)?;
+            let fields = params.fields.into_iter().collect::<HashSet<_>>();
+            let select = state
+                .fields
+                .iter()
+                .map(|field| {
+                    if fields.contains(field) {
+                        format!(
+                            "TRIM(CAST({} AS VARCHAR)) AS {}",
+                            quote_ident(field),
+                            quote_ident(field)
+                        )
+                    } else {
+                        quote_ident(field)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            create_duckdb_select(conn, next_table, &select, &state.table, None)
+                .context("执行 Trim 清洗失败")?;
+        }
+        CleanNodeType::Replace => {
+            let params: ReplaceParams = parse_params(node)?;
+            let select = state
+                .fields
+                .iter()
+                .map(|field| {
+                    if *field == params.field {
+                        format!(
+                            "REPLACE(CAST({} AS VARCHAR), {}, {}) AS {}",
+                            quote_ident(field),
+                            sql_literal(&params.from),
+                            sql_literal(&params.to),
+                            quote_ident(field)
+                        )
+                    } else {
+                        quote_ident(field)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            create_duckdb_select(conn, next_table, &select, &state.table, None)
+                .context("执行 Replace 清洗失败")?;
+            state
+                .field_types
+                .insert(params.field, DuckFieldType::String);
+        }
+        CleanNodeType::TypeCast => {
+            let params: TypeCastParams = parse_params(node)?;
+            let (sql_type, field_type) = match params.target {
+                TypeCastTarget::String => ("VARCHAR", DuckFieldType::String),
+                TypeCastTarget::Number => ("DOUBLE", DuckFieldType::Number),
+                TypeCastTarget::Boolean => ("BOOLEAN", DuckFieldType::Boolean),
+            };
+            let select = state
+                .fields
+                .iter()
+                .map(|field| {
+                    if *field == params.field {
+                        format!(
+                            "TRY_CAST({} AS {sql_type}) AS {}",
+                            quote_ident(field),
+                            quote_ident(field)
+                        )
+                    } else {
+                        quote_ident(field)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            create_duckdb_select(conn, next_table, &select, &state.table, None)
+                .context("执行 TypeCast 清洗失败")?;
+            state.field_types.insert(params.field, field_type);
+        }
+        CleanNodeType::Filter => {
+            let params: FilterParams = parse_params(node)?;
+            let select = state
+                .fields
+                .iter()
+                .map(|field| quote_ident(field))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let where_sql = filter_to_sql(&params);
+            create_duckdb_select(conn, next_table, &select, &state.table, Some(&where_sql))
+                .context("执行 Filter 清洗失败")?;
+        }
+        CleanNodeType::Dedupe => {
+            let params: FieldListParams = parse_params(node)?;
+            let select = state
+                .fields
+                .iter()
+                .map(|field| quote_ident(field))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let partition = params
+                .fields
+                .iter()
+                .map(|field| quote_ident(field))
+                .collect::<Vec<_>>()
+                .join(", ");
+            conn.execute_batch(&format!(
+                "CREATE TABLE {} AS \
+                 SELECT {select} FROM ( \
+                   SELECT *, ROW_NUMBER() OVER (PARTITION BY {partition} ORDER BY 1) AS __rn \
+                   FROM {} \
+                 ) WHERE __rn = 1;",
+                quote_ident(next_table),
+                quote_ident(&state.table),
+            ))
+            .context("执行 Dedupe 清洗失败")?;
+        }
+        CleanNodeType::DerivedField => {
+            let params: DerivedFieldParams = parse_params(node)?;
+            let mut fields = state.fields.clone();
+            if !fields.contains(&params.field) {
+                fields.push(params.field.clone());
+            }
+            let select = fields
+                .iter()
+                .map(|field| {
+                    if *field == params.field {
+                        format!(
+                            "{} AS {}",
+                            template_to_duckdb_concat(&params.template),
+                            quote_ident(field)
+                        )
+                    } else {
+                        quote_ident(field)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            create_duckdb_select(conn, next_table, &select, &state.table, None)
+                .context("执行 DerivedField 清洗失败")?;
+            state.fields = fields;
+            state
+                .field_types
+                .insert(params.field, DuckFieldType::String);
+        }
+    }
+    Ok(())
+}
+
+fn create_duckdb_select(
+    conn: &Connection,
+    next_table: &str,
+    select: &str,
+    source_table: &str,
+    where_sql: Option<&str>,
+) -> Result<()> {
+    let where_clause = where_sql
+        .filter(|sql| !sql.is_empty())
+        .map(|sql| format!(" WHERE {sql}"))
+        .unwrap_or_default();
+    conn.execute_batch(&format!(
+        "CREATE TABLE {} AS SELECT {select} FROM {}{where_clause};",
+        quote_ident(next_table),
+        quote_ident(source_table),
+    ))?;
+    Ok(())
+}
+
+fn filter_to_sql(params: &FilterParams) -> String {
+    let field = quote_ident(&params.field);
+    match params.op {
+        FilterOp::Eq => format!(
+            "CAST({field} AS VARCHAR) = {}",
+            sql_literal(&value_to_string(
+                params.value.as_ref().unwrap_or(&Value::Null)
+            ))
+        ),
+        FilterOp::Ne => format!(
+            "CAST({field} AS VARCHAR) <> {}",
+            sql_literal(&value_to_string(
+                params.value.as_ref().unwrap_or(&Value::Null)
+            ))
+        ),
+        FilterOp::Contains => format!(
+            "CONTAINS(CAST({field} AS VARCHAR), {})",
+            sql_literal(&value_to_string(
+                params.value.as_ref().unwrap_or(&Value::Null)
+            ))
+        ),
+        FilterOp::NotContains => format!(
+            "NOT CONTAINS(CAST({field} AS VARCHAR), {})",
+            sql_literal(&value_to_string(
+                params.value.as_ref().unwrap_or(&Value::Null)
+            ))
+        ),
+        FilterOp::IsEmpty => format!("{field} IS NULL OR TRIM(CAST({field} AS VARCHAR)) = ''"),
+        FilterOp::IsNotEmpty => {
+            format!("{field} IS NOT NULL AND TRIM(CAST({field} AS VARCHAR)) <> ''")
+        }
+        FilterOp::Gt | FilterOp::Gte | FilterOp::Lt | FilterOp::Lte => {
+            let op = match params.op {
+                FilterOp::Gt => ">",
+                FilterOp::Gte => ">=",
+                FilterOp::Lt => "<",
+                FilterOp::Lte => "<=",
+                _ => unreachable!(),
+            };
+            format!(
+                "TRY_CAST({field} AS DOUBLE) {op} TRY_CAST({} AS DOUBLE)",
+                sql_literal(&value_to_string(
+                    params.value.as_ref().unwrap_or(&Value::Null)
+                ))
+            )
+        }
+    }
+}
+
+fn template_to_duckdb_concat(template: &str) -> String {
+    let mut parts = Vec::new();
+    let mut rest = template;
+    while let Some(start) = rest.find("${") {
+        let (literal, after_start) = rest.split_at(start);
+        if !literal.is_empty() {
+            parts.push(sql_literal(literal));
+        }
+        if let Some(end) = after_start.find('}') {
+            let field = &after_start[2..end];
+            parts.push(format!(
+                "COALESCE(CAST({} AS VARCHAR), '')",
+                quote_ident(field)
+            ));
+            rest = &after_start[end + 1..];
+        } else {
+            parts.push(sql_literal(after_start));
+            rest = "";
+        }
+    }
+    if !rest.is_empty() {
+        parts.push(sql_literal(rest));
+    }
+    if parts.is_empty() {
+        sql_literal("")
+    } else {
+        format!("CONCAT({})", parts.join(", "))
+    }
+}
+
+fn query_duckdb_rows(
+    conn: &Connection,
+    state: &DuckExecutionState,
+    limit: Option<usize>,
+) -> Result<Vec<Value>> {
+    if state.fields.is_empty() {
+        return Ok(vec![]);
+    }
+    let select = state
+        .fields
+        .iter()
+        .map(|field| format!("CAST({} AS VARCHAR)", quote_ident(field)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let limit_clause = limit.map(|n| format!(" LIMIT {n}")).unwrap_or_default();
+    let sql = format!(
+        "SELECT {select} FROM {}{limit_clause}",
+        quote_ident(&state.table),
+    );
+    let mut stmt = conn.prepare(&sql).context("准备 DuckDB 输出查询失败")?;
+    let rows = stmt
+        .query_map([], |row| {
+            let mut map = Map::new();
+            for (idx, field) in state.fields.iter().enumerate() {
+                let raw: Option<String> = row.get(idx)?;
+                let value = raw
+                    .map(|value| cast_duckdb_output(&value, state.field_types.get(field).copied()))
+                    .unwrap_or(Value::Null);
+                map.insert(field.clone(), value);
+            }
+            Ok(Value::Object(map))
+        })
+        .context("查询 DuckDB 输出数据失败")?;
+
+    rows.collect::<std::result::Result<Vec<_>, _>>()
+        .context("读取 DuckDB 输出数据失败")
+}
+
+fn cast_duckdb_output(value: &str, field_type: Option<DuckFieldType>) -> Value {
+    match field_type.unwrap_or(DuckFieldType::String) {
+        DuckFieldType::String => Value::String(value.to_string()),
+        DuckFieldType::Number => value
+            .parse::<f64>()
+            .ok()
+            .and_then(Number::from_f64)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+        DuckFieldType::Boolean => match value.to_ascii_lowercase().as_str() {
+            "true" | "t" | "1" => Value::Bool(true),
+            "false" | "f" | "0" => Value::Bool(false),
+            _ => Value::Null,
+        },
+    }
+}
+
+fn quote_ident(ident: &str) -> String {
+    format!("\"{}\"", ident.replace('"', "\"\""))
+}
+
+fn sql_literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
 }
 
 fn topo_sort(pipeline: &CleanPipeline) -> Result<Vec<&CleanNode>> {

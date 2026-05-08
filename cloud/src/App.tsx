@@ -33,7 +33,14 @@ import DataDetail from "page/data/DataDetail";
 import NewDataStore from "page/data/NewDataStore";
 import TaskInstance from "page/detail/TaskInstance";
 import { useEffect, useState } from "react";
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import "./App.css";
 import Navigator from "./Navigator";
 import { ReactComponent as Logo } from "./assets/svg/logo.svg";
@@ -78,7 +85,6 @@ export const mainMenu = [
     label: <Link to="/pay">升级会员</Link>,
   },
 ];
-
 
 function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -195,6 +201,7 @@ function App() {
             style={{
               flex: 1,
               overflow: "hidden",
+              position: "relative",
             }}
           >
             <Routes>

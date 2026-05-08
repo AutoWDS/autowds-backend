@@ -1,3 +1,4 @@
+use crate::model::prelude::ScraperTask;
 use crate::service::data_clean::{export_pipeline, preview_pipeline, validate_pipeline};
 use crate::utils::jwt::Claims;
 use crate::views::data_clean::{
@@ -7,6 +8,7 @@ use crate::views::data_clean::{
 use anyhow::Context;
 use axum_valid::Valid;
 use chrono::{NaiveDateTime, Utc};
+use sea_orm::DbConn;
 use serde_json::Value;
 use summer_sqlx::sqlx::{self, Row};
 use summer_sqlx::ConnectPool;
@@ -97,8 +99,9 @@ async fn validate_clean_pipeline(
 /// @tag data-clean
 #[post_api("/store/{store_id}/clean/preview")]
 async fn preview_clean_pipeline(
-    _claims: Claims,
-    Path(_store_id): Path<String>,
+    claims: Claims,
+    Path(store_id): Path<String>,
+    Component(db): Component<DbConn>,
     Json(body): Json<CleanPreviewReq>,
 ) -> Result<Json<CleanPreviewResp>> {
     if body.records.is_empty() {
@@ -106,8 +109,10 @@ async fn preview_clean_pipeline(
             "预览需要提供样本数据，当前 Rust 后端尚未接入 store 数据读取",
         ))?;
     }
-    let resp =
-        preview_pipeline(&body.pipeline, body.records, body.limit).context("执行清洗预览失败")?;
+    let task_id = parse_store_id(&store_id)?;
+    let task = ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
+    let resp = preview_pipeline(&body.pipeline, body.records, body.limit, Some(&task.rule))
+        .context("执行清洗预览失败")?;
     Ok(Json(resp))
 }
 
@@ -115,8 +120,9 @@ async fn preview_clean_pipeline(
 /// @tag data-clean
 #[post_api("/store/{store_id}/clean/export")]
 async fn export_clean_pipeline_api(
-    _claims: Claims,
+    claims: Claims,
     Path(store_id): Path<String>,
+    Component(db): Component<DbConn>,
     Json(body): Json<CleanExportReq>,
 ) -> Result<Json<CleanExportResp>> {
     if body.records.is_empty() {
@@ -124,9 +130,23 @@ async fn export_clean_pipeline_api(
             "导出需要提供待清洗数据，当前 Rust 后端尚未接入 store 数据读取",
         ))?;
     }
-    let resp = export_pipeline(&body.pipeline, body.records, body.format, &store_id)
-        .context("执行清洗导出失败")?;
+    let task_id = parse_store_id(&store_id)?;
+    let task = ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
+    let resp = export_pipeline(
+        &body.pipeline,
+        body.records,
+        body.format,
+        &store_id,
+        Some(&task.rule),
+    )
+    .context("执行清洗导出失败")?;
     Ok(Json(resp))
+}
+
+fn parse_store_id(store_id: &str) -> Result<i64> {
+    store_id
+        .parse::<i64>()
+        .map_err(|_| KnownWebError::bad_request("数据集 ID 不正确").into())
 }
 
 async fn ensure_pipeline_table(pool: &ConnectPool) -> Result<()> {

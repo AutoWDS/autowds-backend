@@ -1,5 +1,6 @@
 use crate::model::prelude::{ScraperTask, TaskInstance};
 use crate::model::{scraper_task, task_instance};
+use crate::service::data_clean::rule_field_projections;
 use crate::utils::jwt::Claims;
 use crate::views::store::{
     dataset_created_millis, DatasetDataItem, DatasetDataPage, DatasetDataQuery, DatasetField,
@@ -10,8 +11,7 @@ use sea_orm::{
     ColumnTrait, Condition, DbConn, EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter,
     QueryOrder, QuerySelect,
 };
-use serde_json::Value;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use summer_sea_orm::pagination::{Page, Pagination};
 use summer_sqlx::sqlx::{self, Row};
 use summer_sqlx::ConnectPool;
@@ -81,34 +81,14 @@ async fn query_dataset_schema(
     claims: Claims,
     Path(store_id): Path<String>,
     Component(db): Component<DbConn>,
-    Component(pool): Component<ConnectPool>,
 ) -> Result<Json<Vec<DatasetField>>> {
     let task_id = parse_store_id(&store_id)?;
-    ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
-
-    let Some(table) = task_instance_record_shard_table(claims.uid) else {
-        return Ok(Json(vec![]));
-    };
-    let sql = format!("SELECT payload FROM {table} WHERE task_id = $1 ORDER BY id ASC LIMIT 100");
-    let rows = match sqlx::query(&sql).bind(task_id).fetch_all(&pool).await {
-        Ok(rows) => rows,
-        Err(e) if is_pg_undefined_table(&e) => return Ok(Json(vec![])),
-        Err(e) => return Err(e).context("查询数据集字段失败")?,
-    };
-
-    let mut fields = BTreeSet::new();
-    for row in rows {
-        let payload: Value = row.try_get("payload").context("解析数据集字段失败")?;
-        if let Value::Object(map) = payload {
-            fields.extend(map.keys().cloned());
-        }
-    }
-
+    let task = ScraperTask::find_check_task(&db, task_id, claims.uid).await?;
     Ok(Json(
-        fields
+        rule_field_projections(Some(&task.rule))
             .into_iter()
-            .map(|name| DatasetField {
-                name,
+            .map(|projection| DatasetField {
+                name: projection.output_name,
                 default_value: String::new(),
             })
             .collect(),

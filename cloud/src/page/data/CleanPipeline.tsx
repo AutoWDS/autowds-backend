@@ -17,6 +17,7 @@ import {
   message,
   Modal,
   Row,
+  Segmented,
   Select,
   Space,
   Table,
@@ -63,6 +64,18 @@ import { useParams } from "react-router-dom";
 const { TextArea } = Input;
 
 type TransformNodeType = Exclude<CleanNodeType, "source" | "sink">;
+type PreviewMode = "rows" | "columns" | "both";
+
+interface ColumnValueProfile {
+  value: JsonValue;
+  label: string;
+  count: number;
+}
+
+interface ColumnProfile {
+  field: string;
+  values: ColumnValueProfile[];
+}
 
 const nodeOptions: { value: TransformNodeType; label: string }[] = [
   { value: "selectRename", label: "选择/重命名" },
@@ -247,6 +260,40 @@ function valueBrief(value: JsonValue | undefined): string {
   return String(value);
 }
 
+function isJsonObject(value: JsonValue): value is JsonObject {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function valueProfileKey(value: JsonValue | undefined): string {
+  if (value === undefined) return "__undefined__";
+  return JSON.stringify(value);
+}
+
+function buildColumnProfiles(records: JsonValue[], fields: string[]): ColumnProfile[] {
+  return fields.map((field) => {
+    const counter = new Map<string, ColumnValueProfile>();
+    records.forEach((record) => {
+      if (!isJsonObject(record)) return;
+      const value = record[field];
+      const key = valueProfileKey(value);
+      const current = counter.get(key);
+      if (current) {
+        current.count += 1;
+      } else {
+        counter.set(key, {
+          value: value ?? null,
+          label: value === undefined ? "(空)" : valueBrief(value) || "(空)",
+          count: 1,
+        });
+      }
+    });
+    return {
+      field,
+      values: Array.from(counter.values()).sort((a, b) => b.count - a.count),
+    };
+  });
+}
+
 function cleanNodeSummary(type: CleanNodeType, params: JsonObject = {}) {
   if (type === "source") return ["当前数据集"];
   if (type === "sink") return ["输出结果"];
@@ -404,6 +451,8 @@ const CleanPipelineWorkbench = () => {
   const [saving, setSaving] = useState(false);
   const [format, setFormat] = useState<CleanExportFormat>("json");
   const [paramModalOpen, setParamModalOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("both");
+  const [valueDrafts, setValueDrafts] = useState<Record<string, string>>({});
 
   const selectedNode = nodes.find((node) => node.id === selectedId);
   const selectedNodeType = selectedNode?.data.nodeType;
@@ -662,6 +711,165 @@ const CleanPipelineWorkbench = () => {
     render: (value: JsonValue) =>
       typeof value === "object" ? JSON.stringify(value) : String(value ?? ""),
   }));
+  const columnProfiles = useMemo(
+    () =>
+      preview?.valid
+        ? buildColumnProfiles(preview.output, preview.schema)
+        : [],
+    [preview],
+  );
+
+  const applyValueRevision = (field: string, from: JsonValue, to: string) => {
+    const trimmedTo = to.trim();
+    if (!trimmedTo) {
+      message.warning("请输入修订后的值");
+      return;
+    }
+    const id = `replace-${Date.now()}`;
+    const sink = nodes.find((node) => node.data.nodeType === "sink");
+    const sinkId = sink?.id || "sink";
+    const incoming = edges.filter((edge) => edge.target === sinkId);
+    const sources = incoming.length ? incoming.map((edge) => edge.source) : ["source"];
+    const sourceNode = nodes.find((node) => node.id === sources[0]);
+    const position = {
+      x: (sourceNode?.position.x || 320) + 260,
+      y: sourceNode?.position.y || 160,
+    };
+
+    setNodes((oldNodes) =>
+      oldNodes.concat({
+        id,
+        type: "cleanNode",
+        position,
+        data: {
+          label: `修订 ${field}`,
+          nodeType: "replace",
+        },
+      }),
+    );
+    setNodeParams((oldParams) => ({
+      ...oldParams,
+      [id]: {
+        field,
+        from: valueBrief(from),
+        to: trimmedTo,
+      },
+    }));
+    setEdges((oldEdges) =>
+      oldEdges
+        .filter((edge) => edge.target !== sinkId)
+        .concat(
+          sources.map((source) => ({
+            id: uniqueEdgeId(source, id),
+            source,
+            target: id,
+            animated: true,
+          })),
+          {
+            id: uniqueEdgeId(id, sinkId),
+            source: id,
+            target: sinkId,
+            animated: true,
+          },
+        ),
+    );
+    setSelectedId(id);
+    setValueDrafts((oldDrafts) => {
+      const next = { ...oldDrafts };
+      delete next[`${field}:${valueProfileKey(from)}`];
+      return next;
+    });
+    message.success("已添加值修订节点");
+  };
+
+  const renderRowsPreview = () => (
+    <Table
+      size="small"
+      rowKey={(_, index) => String(index)}
+      dataSource={(preview?.output || []) as JsonObject[]}
+      columns={tableColumns}
+      pagination={{ pageSize: 10 }}
+    />
+  );
+
+  const renderColumnsPreview = () => (
+    <Row gutter={12}>
+      {columnProfiles.map((profile) => (
+        <Col key={profile.field} span={6} style={{ marginBottom: 12 }}>
+          <Card
+            size="small"
+            title={
+              <Space direction="vertical" size={0}>
+                <Typography.Text strong>{profile.field}</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {profile.values.length} 个唯一值
+                </Typography.Text>
+              </Space>
+            }
+            bodyStyle={{ maxHeight: 220, overflow: "auto", padding: 8 }}
+          >
+            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+              {profile.values.map((item) => {
+                const draftKey = `${profile.field}:${valueProfileKey(item.value)}`;
+                return (
+                  <div
+                    key={draftKey}
+                    style={{
+                      borderBottom: "1px solid #f0f0f0",
+                      paddingBottom: 8,
+                    }}
+                  >
+                    <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                      <Typography.Text ellipsis style={{ maxWidth: 130 }}>
+                        {item.label}
+                      </Typography.Text>
+                      <Tag>{item.count}</Tag>
+                    </Space>
+                    <Space.Compact style={{ width: "100%", marginTop: 6 }}>
+                      <Input
+                        size="small"
+                        placeholder="修订为"
+                        value={valueDrafts[draftKey]}
+                        onChange={(event) =>
+                          setValueDrafts((oldDrafts) => ({
+                            ...oldDrafts,
+                            [draftKey]: event.target.value,
+                          }))
+                        }
+                      />
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          applyValueRevision(
+                            profile.field,
+                            item.value,
+                            valueDrafts[draftKey] || "",
+                          )
+                        }
+                      >
+                        修订
+                      </Button>
+                    </Space.Compact>
+                  </div>
+                );
+              })}
+            </Space>
+          </Card>
+        </Col>
+      ))}
+    </Row>
+  );
+
+  const renderValidPreview = () => {
+    if (previewMode === "rows") return renderRowsPreview();
+    if (previewMode === "columns") return renderColumnsPreview();
+    return (
+      <Row gutter={12}>
+        <Col span={9}>{renderColumnsPreview()}</Col>
+        <Col span={15}>{renderRowsPreview()}</Col>
+      </Row>
+    );
+  };
 
   return (
     <>
@@ -795,26 +1003,34 @@ const CleanPipelineWorkbench = () => {
       </Row>
       {preview ? (
         <Card
-          title="清洗预览"
+          title={
+            <Space>
+              <span>清洗预览</span>
+              <Segmented
+                size="small"
+                value={previewMode}
+                onChange={(value) => setPreviewMode(value as PreviewMode)}
+                options={[
+                  { label: "按行", value: "rows" },
+                  { label: "按列", value: "columns" },
+                  { label: "行列", value: "both" },
+                ]}
+              />
+            </Space>
+          }
           style={{
             position: "fixed",
-            left: 280,
-            right: 24,
-            bottom: 16,
+            left: 0,
+            right: 0,
+            bottom: 0,
             zIndex: 10,
-            maxHeight: 320,
+            maxHeight: 420,
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
           }}
-          bodyStyle={{ maxHeight: 260, overflow: "auto" }}
+          bodyStyle={{ maxHeight: 350, overflow: "auto" }}
         >
           {preview.valid ? (
-            <Table
-              size="small"
-              rowKey={(_, index) => String(index)}
-              dataSource={preview.output as JsonObject[]}
-              columns={tableColumns}
-              pagination={{ pageSize: 10 }}
-            />
+            renderValidPreview()
           ) : (
             <List
               dataSource={preview.issues}
